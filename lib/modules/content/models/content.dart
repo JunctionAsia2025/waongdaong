@@ -9,6 +9,7 @@ class Content {
   final DateTime createdAt;
   final DateTime updatedAt;
   final List<String> categories;
+  final int? scrapCount;
 
   const Content({
     required this.id,
@@ -20,6 +21,7 @@ class Content {
     required this.createdAt,
     required this.updatedAt,
     this.categories = const [],
+    this.scrapCount,
   });
 
   /// JSON에서 Content 생성
@@ -33,9 +35,11 @@ class Content {
       difficultyLevel: json['difficulty_level'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
-      categories: json['categories'] != null 
-          ? List<String>.from(json['categories'] as List)
-          : [],
+      categories:
+          json['categories'] != null
+              ? List<String>.from(json['categories'] as List)
+              : [],
+      scrapCount: json['scrap_count'] as int?,
     );
   }
 
@@ -51,6 +55,7 @@ class Content {
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'categories': categories,
+      'scrap_count': scrapCount,
     };
   }
 
@@ -65,6 +70,7 @@ class Content {
     DateTime? createdAt,
     DateTime? updatedAt,
     List<String>? categories,
+    int? scrapCount,
   }) {
     return Content(
       id: id ?? this.id,
@@ -76,18 +82,19 @@ class Content {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       categories: categories ?? this.categories,
+      scrapCount: scrapCount ?? this.scrapCount,
     );
   }
 
   /// 콘텐츠가 뉴스인지 확인
   bool get isNews => contentType == 'news';
-  
+
   /// 콘텐츠가 논문인지 확인
   bool get isPaper => contentType == 'paper';
-  
+
   /// 콘텐츠가 칼럼인지 확인
   bool get isColumn => contentType == 'column';
-  
+
   /// 콘텐츠가 블로그인지 확인
   bool get isBlog => contentType == 'blog';
 

@@ -13,6 +13,7 @@ WaongDaong은 AI를 활용한 혁신적인 영어 학습 플랫폼입니다. 개
 
 ### 2. **개인 학습 (Individual Learning)**
 - **콘텐츠 기반 학습**: 뉴스, 논문, 칼럼 등 다양한 콘텐츠로 학습
+- **콘텐츠 스크랩**: 관심 있는 콘텐츠를 스크랩하여 나중에 다시 학습
 - **퀴즈 시스템**: 이해도 측정 및 점수 기반 포인트 적립
 - **학습 결과 분석**: AI가 분석한 개인 학습 리포트 제공
 - **단어장 관리**: 학습한 단어들을 체계적으로 관리
@@ -194,7 +195,7 @@ erDiagram
         timestamp updated_at
     }
     
-    %% 리포트 관련
+    %% 리포트 관련 (통합 모델)
     reports {
         uuid id PK
         uuid user_id FK
@@ -203,31 +204,10 @@ erDiagram
         text title
         text content
         text report_type
+        text ai_feedback
+        text user_reflection
         timestamp created_at
         timestamp updated_at
-    }
-    
-    study_reports {
-        uuid id PK
-        uuid study_group_id FK
-        text summary
-        decimal participation_rate
-        text feedback
-        text learning_direction
-        text reflection
-        timestamp created_at
-    }
-    
-    user_learning_reports {
-        uuid id PK
-        uuid user_id FK
-        text period
-        integer total_study_time
-        integer completed_contents
-        integer earned_points
-        text weak_areas
-        text recommendations
-        timestamp created_at
     }
     
     %% 포인트 관련
@@ -268,7 +248,6 @@ erDiagram
     users ||--o{ user_scraps : "1:N"
     users ||--|| user_points : "1:1"
     users ||--o{ point_transactions : "1:N"
-    users ||--o{ user_learning_reports : "1:N"
     users ||--o{ reports : "1:N"
     
     contents ||--o{ learning_sessions : "1:N"
@@ -281,7 +260,6 @@ erDiagram
     study_groups ||--o{ study_group_participants : "1:N"
     study_groups ||--o{ study_participant_records : "1:N"
     study_groups ||--o{ ai_scripts : "1:N"
-    study_groups ||--|| study_reports : "1:1"
     study_groups ||--o{ reports : "1:N"
     study_groups }o--|| users : "N:1"
     
@@ -298,14 +276,20 @@ erDiagram
 학습 결과 저장 → AI 리포트 생성 → 포인트 적립
 ```
 
-### **2. 그룹 학습 플로우**
+### **2. 콘텐츠 스크랩 플로우**
+```
+콘텐츠 조회 → 스크랩 버튼 클릭 → 스크랩 저장 → 
+스크랩 목록에서 확인 → 스크랩 기반 추천 콘텐츠 제공
+```
+
+### **3. 그룹 학습 플로우**
 ```
 스터디그룹 생성 → 참가자 초대 → 학습 시작 → 
 AI 스크립트 생성 → 학습 진행 → 참여도 기록 → 
 AI 리포트 생성 → 포인트 적립
 ```
 
-### **3. AI 스크립트 생성 플로우**
+### **4. AI 스크립트 생성 플로우**
 ```
 한국어 입력 → AI 모듈로 전송 → Gemini API 호출 → 
 영어 스크립트 생성 → 데이터베이스 저장 → 사용자에게 제공
@@ -328,17 +312,36 @@ AI 리포트 생성 → 포인트 적립
 
 ## 📊 리포트 시스템
 
+### **통합 리포트 모델 (Report)**
+- **유형**: 개인학습 리포트와 그룹학습 리포트를 하나의 테이블로 통합
+- **구조**: `Report` 모델로 구현되어 `ReportService`를 통해 관리
+- **AI 피드백**: `aiFeedback` 필드에 AI가 생성한 분석 결과 저장
+- **사용자 후기**: `userReflection` 필드에 사용자가 직접 입력하는 소감 저장
+
 ### **개인학습 리포트**
-- **학습 시간 분석**: 총 학습 시간, 평균 세션 시간
-- **성취도 분석**: 퀴즈 점수, 완료한 콘텐츠 수
-- **취약점 분석**: AI가 분석한 개선이 필요한 영역
-- **학습 방향성**: AI가 제안하는 향후 학습 계획
+- **연결**: `learning_session_id`로 개별 학습 세션과 연결
+- **생성**: `createLearningReport()` 메서드로 생성
+- **AI 분석**: 학습 패턴, 취약점, 개선 방향을 AI가 자동 분석
+- **사용자 입력**: 학습 후 느낀 점이나 소감을 직접 작성
 
 ### **그룹학습 리포트**
-- **참여도 분석**: 발언 횟수, 시간, 품질
-- **협업 효과**: 그룹 내 역할, 상호작용 품질
-- **학습 성과**: 그룹 전체의 학습 진행 상황
-- **개선점**: 그룹 학습 효율성 향상을 위한 제안
+- **연결**: `study_group_id`로 스터디 그룹과 연결
+- **생성**: `createStudyGroupReport()` 메서드로 생성
+- **AI 분석**: 그룹 참여도, 협업 효과, 전체 성과를 AI가 분석
+- **사용자 입력**: 그룹 학습에 대한 개인적인 후기 작성
+
+### **AI 피드백 vs 사용자 후기**
+| 구분 | AI 피드백 (aiFeedback) | 사용자 후기 (userReflection) |
+|------|------------------------|------------------------------|
+| **생성자** | AI 자동 생성 | 사용자 직접 입력 |
+| **내용** | 객관적 분석 결과 | 주관적 경험담 |
+| **용도** | 학습 방향 제시 | 개인적 성찰 및 기록 |
+| **업데이트** | 학습 데이터 기반 자동 | 사용자가 언제든 수정 가능 |
+
+### **실제 구현된 기능**
+- **CRUD 작업**: `ReportService`를 통한 생성, 조회, 수정, 삭제
+- **타입 안전성**: `ReportType` 열거형으로 개인학습/그룹학습 구분
+- **사용자별 관리**: `getUserReports()`, `getStudyGroupReports()` 메서드
 
 ## 🎯 포인트 시스템
 
@@ -347,6 +350,36 @@ AI 리포트 생성 → 포인트 적립
 - **퀴즈 성과**: 높은 점수 시 보너스 포인트
 - **그룹 참여**: 스터디그룹 참여 시 추가 포인트
 - **연속 학습**: 연속 학습 시 누적 보너스
+
+## 📚 콘텐츠 스크랩 시스템
+
+### **주요 기능**
+- **스크랩/언스크랩**: 관심 있는 콘텐츠를 저장하고 관리
+- **스크랩 목록**: 사용자별 스크랩한 콘텐츠 목록 조회
+- **스크랩 수 표시**: 각 콘텐츠의 스크랩 수 실시간 표시
+- **스크랩 기반 추천**: 사용자의 스크랩 패턴을 분석하여 맞춤형 콘텐츠 추천
+
+### **기술적 특징**
+- **중복 방지**: 동일 콘텐츠 중복 스크랩 방지
+- **실시간 동기화**: 스크랩 상태 변경 시 즉시 반영
+- **페이지네이션**: 대량의 스크랩 데이터 효율적 처리
+- **보안**: RLS를 통한 사용자별 데이터 접근 제어
+
+### **데이터 구조**
+```sql
+user_scraps {
+    id: UUID (PK)
+    user_id: UUID (FK to auth.users)
+    content_id: UUID (FK to content)
+    scrapped_at: TIMESTAMP
+}
+```
+
+### **API 엔드포인트**
+- `POST /user_scraps`: 콘텐츠 스크랩
+- `DELETE /user_scraps`: 콘텐츠 언스크랩
+- `GET /user_scraps`: 사용자별 스크랩 목록
+- `GET /user_scraps/count`: 스크랩 수 조회
 
 ### **사용 방법**
 - **콘텐츠 구매**: 프리미엄 콘텐츠 구매
@@ -403,21 +436,24 @@ dependencies:
 ### **서비스 레이어**
 - **AIScriptService**: AI 스크립트 생성 및 관리
 - **AuthService**: 사용자 인증 및 세션 관리
+- **ContentService**: 콘텐츠 CRUD 및 검색
+- **ScrapService**: 콘텐츠 스크랩 관리
 - **DatabaseService**: 데이터베이스 CRUD 작업
 - **StorageService**: 파일 업로드 및 관리
 
 ## 📱 사용자 인터페이스
 
 ### **메인 화면 (3개 탭)**
-1. **콘텐츠 탭**: 뉴스/논문/칼럼 리스트, 상세 페이지, 스크랩
+1. **콘텐츠 탭**: 뉴스/논문/칼럼 리스트, 상세 페이지, 스크랩 기능
 2. **스터디그룹 탭**: 그룹 목록, 그룹 상세, 실시간 학습
-3. **마이페이지 탭**: 프로필, 리포트, 스크랩, 포인트
+3. **마이페이지 탭**: 프로필, 리포트, 스크랩 목록, 포인트
 
 ### **학습 화면**
-- **콘텐츠 뷰어**: 원문 표시, 번역 도구
+- **콘텐츠 뷰어**: 원문 표시, 번역 도구, 스크랩 버튼
 - **퀴즈 시스템**: 이해도 측정, 즉시 피드백
 - **AI 스크립트**: 실시간 영어 표현 생성
 - **진행률 표시**: 학습 진행 상황 시각화
+- **스크랩 관리**: 스크랩/언스크랩, 스크랩 수 표시
 
 ## 🔒 보안 및 개인정보
 
@@ -444,6 +480,7 @@ dependencies:
 ### **Phase 2: 핵심 기능 (진행 중)**
 - [x] 개인학습 시스템
 - [x] 그룹학습 시스템
+- [x] 콘텐츠 스크랩 시스템
 - [x] 리포트 생성
 - [x] 포인트 시스템
 - [x] Supabase 연동
