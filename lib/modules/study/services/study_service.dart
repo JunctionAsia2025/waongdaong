@@ -7,26 +7,25 @@ class StudyService {
 
   StudyService(this._supabase);
 
-  /// 스터디 그룹 생성
+  /// 스터디그룹 생성
   Future<Result<StudyGroup>> createStudyGroup({
-    required String name,
-    required String description,
-    required String creatorId,
-    required String category,
-    int maxMembers = 10,
-    String? meetingTime,
-    String? meetingLocation,
+    required String title,
+    required int maxParticipants,
+    required DateTime startTime,
+    required DateTime endTime,
+    required String topic,
+    required String createdBy,
   }) async {
     try {
       final groupData = {
-        'name': name,
-        'description': description,
-        'creator_id': creatorId,
-        'category': category,
-        'max_members': maxMembers,
-        'meeting_time': meetingTime,
-        'meeting_location': meetingLocation,
+        'title': title,
+        'max_participants': maxParticipants,
+        'current_participants': 1, // 생성자 포함
+        'start_time': startTime.toIso8601String(),
+        'end_time': endTime.toIso8601String(),
         'status': 'active',
+        'topic': topic,
+        'created_by': createdBy,
         'created_at': DateTime.now().toIso8601String(),
       };
 
@@ -37,10 +36,26 @@ class StudyService {
               .select()
               .single();
 
-      final group = StudyGroup.fromJson(response);
-      return Result.success(group);
+      return Result.success(StudyGroup.fromJson(response));
     } catch (e) {
-      return Result.failure('스터디 그룹을 생성하는 중 오류가 발생했습니다.', e);
+      return Result.failure('스터디그룹 생성 중 오류가 발생했습니다.', e);
+    }
+  }
+
+  /// 스터디그룹 종료
+  Future<Result<void>> endStudyGroup({required String groupId}) async {
+    try {
+      await _supabase
+          .from('study_groups')
+          .update({
+            'status': 'ended',
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', groupId);
+
+      return const Result.success(null);
+    } catch (e) {
+      return Result.failure('스터디그룹 종료 중 오류가 발생했습니다.', e);
     }
   }
 
@@ -338,18 +353,16 @@ class StudyService {
     required int duration, // 10, 15, 20분
   }) async {
     try {
-      final sessionData = {
-        'group_id': groupId,
-        'topic': topic,
-        'duration': duration,
-        'started_at': DateTime.now().toIso8601String(),
-        'status': 'in_progress',
-      };
-
+      // 스터디그룹의 토픽을 업데이트
       final response =
           await _supabase
-              .from('discussion_sessions')
-              .insert(sessionData)
+              .from('study_groups')
+              .update({
+                'topic': topic,
+                'status': 'in_progress',
+                'updated_at': DateTime.now().toIso8601String(),
+              })
+              .eq('id', groupId)
               .select()
               .single();
 
@@ -361,18 +374,17 @@ class StudyService {
 
   /// 토론 세션 종료
   Future<Result<void>> endDiscussionSession({
-    required String sessionId,
+    required String groupId,
     required int actualDuration,
   }) async {
     try {
       await _supabase
-          .from('discussion_sessions')
+          .from('study_groups')
           .update({
-            'ended_at': DateTime.now().toIso8601String(),
-            'actual_duration': actualDuration,
             'status': 'completed',
+            'updated_at': DateTime.now().toIso8601String(),
           })
-          .eq('id', sessionId);
+          .eq('id', groupId);
 
       return const Result.success(null);
     } catch (e) {
@@ -402,11 +414,11 @@ class StudyService {
 
       final totalSessions = (totalSessionsResponse as List).length;
 
-      // 총 토론 세션 수
+      // 총 토론 세션 수 (스터디그룹 상태로 계산)
       final totalDiscussionsResponse = await _supabase
-          .from('discussion_sessions')
+          .from('study_groups')
           .select('id')
-          .eq('group_id', groupId)
+          .eq('id', groupId)
           .eq('status', 'completed');
 
       final totalDiscussions = (totalDiscussionsResponse as List).length;

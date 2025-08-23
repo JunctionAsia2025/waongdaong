@@ -26,24 +26,14 @@ class ReportModule {
   Future<Result<Report>> createIndividualLearningReport({
     required String userId,
     required String learningSessionId,
-    required String period,
-    required int totalStudyTime,
-    required int completedContents,
-    required int earnedPoints,
-    required String weakAreas,
-    required String recommendations,
-    required String reflection,
+    required String title,
+    required String content,
   }) async {
-    return await _reportService.createIndividualLearningReport(
+    return await _reportService.createLearningReport(
       userId: userId,
       learningSessionId: learningSessionId,
-      period: period,
-      totalStudyTime: totalStudyTime,
-      completedContents: completedContents,
-      earnedPoints: earnedPoints,
-      weakAreas: weakAreas,
-      recommendations: recommendations,
-      reflection: reflection,
+      title: title,
+      content: content,
     );
   }
 
@@ -51,67 +41,42 @@ class ReportModule {
   Future<Result<Report>> createStudyGroupReport({
     required String userId,
     required String studyGroupId,
-    required String period,
-    required int totalStudyTime,
-    required int completedContents,
-    required int earnedPoints,
-    required double participationRate,
-    required String weakAreas,
-    required String recommendations,
-    required String reflection,
+    required String title,
+    required String content,
   }) async {
     return await _reportService.createStudyGroupReport(
       userId: userId,
       studyGroupId: studyGroupId,
-      period: period,
-      totalStudyTime: totalStudyTime,
-      completedContents: completedContents,
-      earnedPoints: earnedPoints,
-      participationRate: participationRate,
-      weakAreas: weakAreas,
-      recommendations: recommendations,
-      reflection: reflection,
+      title: title,
+      content: content,
     );
   }
 
   /// 사용자 리포트 조회
-  Future<Result<List<Report>>> getUserReports({
-    required String userId,
-    String? reportType,
-    String? period,
-    int page = 0,
-    int pageSize = 20,
+  Future<Result<List<Report>>> getUserReports(String userId) async {
+    return await _reportService.getUserReports(userId);
+  }
+
+  /// 스터디그룹 리포트 조회
+  Future<Result<List<Report>>> getStudyGroupReports(String studyGroupId) async {
+    return await _reportService.getStudyGroupReports(studyGroupId);
+  }
+
+  /// 리포트 업데이트
+  Future<Result<Report>> updateReport({
+    required String reportId,
+    String? title,
+    String? content,
   }) async {
-    return await _reportService.getUserReports(
-      userId: userId,
-      reportType: reportType,
-      period: period,
-      page: page,
-      pageSize: pageSize,
+    return await _reportService.updateReport(
+      reportId: reportId,
+      title: title,
+      content: content,
     );
   }
 
-  /// 리포트 통계 조회
-  Future<Result<Map<String, dynamic>>> getReportStats({
-    String? userId,
-    String? reportType,
-    String? period,
-  }) async {
-    return await _reportService.getReportStats(
-      userId: userId,
-      reportType: reportType,
-      period: period,
-    );
-  }
-
-  /// 리포트 타입별 통계 조회
-  Future<Result<Map<String, dynamic>>> getReportTypeStats({
-    String? userId,
-    String? period,
-  }) async {
-    return await _reportService.getReportTypeStats(
-      userId: userId,
-      period: period,
-    );
+  /// 리포트 삭제
+  Future<Result<void>> deleteReport(String reportId) async {
+    return await _reportService.deleteReport(reportId);
   }
 }

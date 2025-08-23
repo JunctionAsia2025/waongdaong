@@ -1,11 +1,13 @@
+/// 포인트 거래 모델
 class PointTransaction {
   final String id;
   final String userId;
-  final String type; // 'earn', 'spend', 'refund', 'bonus'
-  final int amount;
-  final int balanceAfter;
+  final int points;
+  final String transactionType; // 'earn', 'spend', 'refund'
+  final String
+  source; // 'learning_session', 'study_group', 'content', 'referral'
   final String description;
-  final String? referenceType; // 'learning_session', 'study_group', 'content', 'referral'
+  final String? referenceType; // 'study_group', 'content', 'referral'
   final String? referenceId;
   final DateTime createdAt;
   final DateTime? expiresAt;
@@ -13,9 +15,9 @@ class PointTransaction {
   const PointTransaction({
     required this.id,
     required this.userId,
-    required this.type,
-    required this.amount,
-    required this.balanceAfter,
+    required this.points,
+    required this.transactionType,
+    required this.source,
     required this.description,
     this.referenceType,
     this.referenceId,
@@ -23,30 +25,33 @@ class PointTransaction {
     this.expiresAt,
   });
 
+  /// JSON에서 PointTransaction 객체 생성
   factory PointTransaction.fromJson(Map<String, dynamic> json) {
     return PointTransaction(
       id: json['id'] as String,
       userId: json['user_id'] as String,
-      type: json['type'] as String,
-      amount: json['amount'] as int,
-      balanceAfter: json['balance_after'] as int,
+      points: json['points'] as int,
+      transactionType: json['transaction_type'] as String,
+      source: json['source'] as String,
       description: json['description'] as String,
       referenceType: json['reference_type'] as String?,
       referenceId: json['reference_id'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
-      expiresAt: json['expires_at'] != null 
-          ? DateTime.parse(json['expires_at'] as String) 
-          : null,
+      expiresAt:
+          json['expires_at'] != null
+              ? DateTime.parse(json['expires_at'] as String)
+              : null,
     );
   }
 
+  /// PointTransaction 객체를 JSON으로 변환
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'user_id': userId,
-      'type': type,
-      'amount': amount,
-      'balance_after': balanceAfter,
+      'points': points,
+      'transaction_type': transactionType,
+      'source': source,
       'description': description,
       'reference_type': referenceType,
       'reference_id': referenceId,
@@ -55,12 +60,13 @@ class PointTransaction {
     };
   }
 
+  /// PointTransaction 객체 복사 및 수정
   PointTransaction copyWith({
     String? id,
     String? userId,
-    String? type,
-    int? amount,
-    int? balanceAfter,
+    int? points,
+    String? transactionType,
+    String? source,
     String? description,
     String? referenceType,
     String? referenceId,
@@ -70,9 +76,9 @@ class PointTransaction {
     return PointTransaction(
       id: id ?? this.id,
       userId: userId ?? this.userId,
-      type: type ?? this.type,
-      amount: amount ?? this.amount,
-      balanceAfter: balanceAfter ?? this.balanceAfter,
+      points: points ?? this.points,
+      transactionType: transactionType ?? this.transactionType,
+      source: source ?? this.source,
       description: description ?? this.description,
       referenceType: referenceType ?? this.referenceType,
       referenceId: referenceId ?? this.referenceId,
@@ -81,9 +87,27 @@ class PointTransaction {
     );
   }
 
+  /// 포인트 적립인지 확인
+  bool get isEarn => transactionType == 'earn';
+
+  /// 포인트 사용인지 확인
+  bool get isSpend => transactionType == 'spend';
+
+  /// 포인트 환불인지 확인
+  bool get isRefund => transactionType == 'refund';
+
+  /// 스터디그룹 관련인지 확인
+  bool get isStudyGroupRelated => referenceType == 'study_group';
+
+  /// 콘텐츠 관련인지 확인
+  bool get isContentRelated => referenceType == 'content';
+
+  /// 추천인 관련인지 확인
+  bool get isReferralRelated => referenceType == 'referral';
+
   @override
   String toString() {
-    return 'PointTransaction(id: $id, userId: $userId, type: $type, amount: $amount, balanceAfter: $balanceAfter, description: $description, referenceType: $referenceType, referenceId: $referenceId, createdAt: $createdAt, expiresAt: $expiresAt)';
+    return 'PointTransaction(id: $id, userId: $userId, points: $points, transactionType: $transactionType, source: $source, description: $description, referenceType: $referenceType, referenceId: $referenceId, createdAt: $createdAt, expiresAt: $expiresAt)';
   }
 
   @override
@@ -92,9 +116,9 @@ class PointTransaction {
     return other is PointTransaction &&
         other.id == id &&
         other.userId == userId &&
-        other.type == type &&
-        other.amount == amount &&
-        other.balanceAfter == balanceAfter &&
+        other.points == points &&
+        other.transactionType == transactionType &&
+        other.source == source &&
         other.description == description &&
         other.referenceType == referenceType &&
         other.referenceId == referenceId &&
@@ -106,9 +130,9 @@ class PointTransaction {
   int get hashCode {
     return id.hashCode ^
         userId.hashCode ^
-        type.hashCode ^
-        amount.hashCode ^
-        balanceAfter.hashCode ^
+        points.hashCode ^
+        transactionType.hashCode ^
+        source.hashCode ^
         description.hashCode ^
         referenceType.hashCode ^
         referenceId.hashCode ^

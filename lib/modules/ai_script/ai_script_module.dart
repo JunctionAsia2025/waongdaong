@@ -1,6 +1,5 @@
 import '../supabase/supabase_module.dart';
-import 'services/ai_api_service.dart';
-import 'services/ai_script_database_service.dart';
+import '../ai/ai_module.dart';
 import 'services/ai_script_service.dart';
 
 /// AI 스크립트 모듈
@@ -8,9 +7,8 @@ import 'services/ai_script_service.dart';
 class AiScriptModule {
   static AiScriptModule? _instance;
 
-  late final AiApiService _aiApiService;
-  late final AiScriptDatabaseService _databaseService;
-  late final AiScriptService _aiScriptService;
+  late final AIModule _aiModule;
+  late final AIScriptService _aiScriptService;
 
   AiScriptModule._();
 
@@ -21,33 +19,26 @@ class AiScriptModule {
   }
 
   /// 모듈 초기화
-  /// Supabase 모듈이 먼저 초기화되어야 함
-  void initialize({bool useMockApi = false}) {
+  /// Supabase 모듈과 AI 모듈이 먼저 초기화되어야 함
+  Future<void> initialize() async {
     final supabaseClient = SupabaseModule.instance.client;
 
-    // 서비스 인스턴스 생성
-    _aiApiService = useMockApi ? MockAiApiService() : AiApiService();
-    _databaseService = AiScriptDatabaseService(supabaseClient);
-    _aiScriptService = AiScriptService(
-      aiApiService: _aiApiService,
-      databaseService: _databaseService,
-    );
+    // AI 모듈 초기화
+    _aiModule = AIModule();
+    await _aiModule.initialize();
+
+    // AI 스크립트 서비스 인스턴스 생성
+    _aiScriptService = AIScriptService(supabaseClient, _aiModule);
   }
 
-  /// AI API 서비스 접근자
-  AiApiService get aiApiService {
+  /// AI 모듈 접근자
+  AIModule get aiModule {
     _ensureInitialized();
-    return _aiApiService;
-  }
-
-  /// 데이터베이스 서비스 접근자
-  AiScriptDatabaseService get databaseService {
-    _ensureInitialized();
-    return _databaseService;
+    return _aiModule;
   }
 
   /// AI 스크립트 서비스 접근자
-  AiScriptService get aiScriptService {
+  AIScriptService get aiScriptService {
     _ensureInitialized();
     return _aiScriptService;
   }

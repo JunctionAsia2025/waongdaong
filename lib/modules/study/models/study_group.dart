@@ -1,23 +1,31 @@
 /// 자유롭고 단순한 스터디 그룹 모델
 class StudyGroup {
   final String id;
-  final String name;
+  final String title;
   final String description;
   final String creatorId;
   final String category;
-  final int maxMembers;
+  final int maxParticipants;
+  final int currentParticipants;
+  final DateTime startTime;
+  final DateTime endTime;
   final String status;
+  final String topic;
   final DateTime createdAt;
   final DateTime? updatedAt;
 
   const StudyGroup({
     required this.id,
-    required this.name,
+    required this.title,
     required this.description,
     required this.creatorId,
     required this.category,
-    required this.maxMembers,
+    required this.maxParticipants,
+    required this.currentParticipants,
+    required this.startTime,
+    required this.endTime,
     required this.status,
+    required this.topic,
     required this.createdAt,
     this.updatedAt,
   });
@@ -26,16 +34,21 @@ class StudyGroup {
   factory StudyGroup.fromJson(Map<String, dynamic> json) {
     return StudyGroup(
       id: json['id'] as String,
-      name: json['name'] as String,
+      title: json['title'] as String,
       description: json['description'] as String,
       creatorId: json['creator_id'] as String,
       category: json['category'] as String,
-      maxMembers: json['max_members'] as int,
+      maxParticipants: json['max_participants'] as int,
+      currentParticipants: json['current_participants'] as int,
+      startTime: DateTime.parse(json['start_time'] as String),
+      endTime: DateTime.parse(json['end_time'] as String),
       status: json['status'] as String,
+      topic: json['topic'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: json['updated_at'] != null 
-          ? DateTime.parse(json['updated_at'] as String) 
-          : null,
+      updatedAt:
+          json['updated_at'] != null
+              ? DateTime.parse(json['updated_at'] as String)
+              : null,
     );
   }
 
@@ -43,12 +56,16 @@ class StudyGroup {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'name': name,
+      'title': title,
       'description': description,
       'creator_id': creatorId,
       'category': category,
-      'max_members': maxMembers,
+      'max_participants': maxParticipants,
+      'current_participants': currentParticipants,
+      'start_time': startTime.toIso8601String(),
+      'end_time': endTime.toIso8601String(),
       'status': status,
+      'topic': topic,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };
@@ -57,23 +74,31 @@ class StudyGroup {
   /// 스터디 그룹 정보 복사 및 수정
   StudyGroup copyWith({
     String? id,
-    String? name,
+    String? title,
     String? description,
     String? creatorId,
     String? category,
-    int? maxMembers,
+    int? maxParticipants,
+    int? currentParticipants,
+    DateTime? startTime,
+    DateTime? endTime,
     String? status,
+    String? topic,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
     return StudyGroup(
       id: id ?? this.id,
-      name: name ?? this.name,
+      title: title ?? this.title,
       description: description ?? this.description,
       creatorId: creatorId ?? this.creatorId,
       category: category ?? this.category,
-      maxMembers: maxMembers ?? this.maxMembers,
+      maxParticipants: maxParticipants ?? this.maxParticipants,
+      currentParticipants: currentParticipants ?? this.currentParticipants,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
       status: status ?? this.status,
+      topic: topic ?? this.topic,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -81,12 +106,24 @@ class StudyGroup {
 
   /// 활성 상태인지 확인
   bool get isActive => status == 'active';
-  
+
+  /// 진행 중인지 확인
+  bool get isInProgress => status == 'in_progress';
+
   /// 일시 중단 상태인지 확인
   bool get isPaused => status == 'paused';
-  
+
+  /// 완료된 상태인지 확인
+  bool get isCompleted => status == 'completed';
+
   /// 종료된 상태인지 확인
   bool get isClosed => status == 'closed';
+
+  /// 참가자 모집 가능한지 확인
+  bool get canJoin => isActive && currentParticipants < maxParticipants;
+
+  /// 그룹이 가득 찼는지 확인
+  bool get isFull => currentParticipants >= maxParticipants;
 
   @override
   bool operator ==(Object other) {
@@ -99,6 +136,6 @@ class StudyGroup {
 
   @override
   String toString() {
-    return 'StudyGroup(id: $id, name: $name, status: $status)';
+    return 'StudyGroup(id: $id, title: $title, status: $status, participants: $currentParticipants/$maxParticipants)';
   }
 }

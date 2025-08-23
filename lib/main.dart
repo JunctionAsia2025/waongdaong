@@ -9,7 +9,7 @@ void main() async {
   await SupabaseModule.instance.initialize();
 
   // AI 스크립트 모듈 초기화 (실제 Gemini API 사용)
-  AiScriptModule.instance.initialize(useMockApi: false);
+  AiScriptModule.instance.initialize();
 
   runApp(const MyApp());
 }

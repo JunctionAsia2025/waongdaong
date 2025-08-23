@@ -90,11 +90,11 @@ class PointModule {
     required int studyTime,
     required int comprehensionScore,
   }) async {
-    return await _pointService.earnPointsForLearning(
+    return await _pointService.earnPointsForLearningSession(
       userId: userId,
       sessionId: sessionId,
-      studyTime: studyTime,
-      comprehensionScore: comprehensionScore,
+      amount: studyTime + comprehensionScore,
+      description: '학습 완료 보상 ($studyTime분, 이해도: $comprehensionScore점)',
     );
   }
 }

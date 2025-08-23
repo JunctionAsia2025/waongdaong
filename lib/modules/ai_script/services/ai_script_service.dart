@@ -1,173 +1,201 @@
-import 'package:uuid/uuid.dart';
-import '../models/ai_script_model.dart';
-import 'ai_api_service.dart';
-import 'ai_script_database_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../models/ai_script.dart';
+import '../../core/utils/result.dart';
+import '../../ai/ai_module.dart';
 
-/// AI 스크립트 생성 및 관리를 담당하는 메인 서비스
-/// 사용자 입력을 받아 AI API를 통해 영어 스크립트를 생성하고 데이터베이스에 저장
-class AiScriptService {
-  final AiApiService _aiApiService;
-  final AiScriptDatabaseService _databaseService;
-  final Uuid _uuid = const Uuid();
+/// AI 스크립트 서비스 - AI Module을 활용하여 스크립트 관리
+class AIScriptService {
+  final SupabaseClient _supabase;
+  final AIModule _aiModule;
 
-  AiScriptService({
-    required AiApiService aiApiService,
-    required AiScriptDatabaseService databaseService,
-  }) : _aiApiService = aiApiService,
-       _databaseService = databaseService;
+  AIScriptService(this._supabase, this._aiModule);
 
-  /// 한국어 입력을 받아 영어 스크립트 생성
-  /// 1. AI API를 통해 번역 수행
-  /// 2. 결과를 데이터베이스에 저장
-  /// 3. AiScript 객체 반환
-  Future<AiScriptGenerationResult> generateEnglishScript({
-    required String studySessionId,
+  /// AI 스크립트 생성 (koreanInput + basicPrompt -> englishScript)
+  Future<Result<AIScript>> generateScript({
     required String userId,
     required String koreanInput,
-    bool saveToDatabase = true,
-    bool checkExisting = true,
+    String? basicPrompt,
+    String? context,
+    String? difficulty,
+    String? topic,
+    String? studyGroupId,
   }) async {
     try {
-      // 입력값 검증
-      if (koreanInput.trim().isEmpty) {
-        return AiScriptGenerationResult.error('한국어 입력이 비어있습니다.');
-      }
-
-      // 기존 스크립트 확인 (선택적)
-      if (checkExisting) {
-        final existingScript = await _databaseService.findExistingScript(
-          userId: userId,
-          koreanInput: koreanInput.trim(),
-        );
-
-        if (existingScript != null) {
-          return AiScriptGenerationResult.success(
-            existingScript,
-            isFromCache: true,
-          );
-        }
-      }
-
-      // AI API를 통한 영어 스크립트 생성
-      final aiResponse = await _aiApiService.generateEnglishScript(
-        koreanInput.trim(),
+      // AI Module을 통해 스크립트 생성
+      final scriptResult = await _aiModule.aiApiService.sendPrompt(
+        prompt: _buildPrompt(koreanInput, basicPrompt),
+        maxTokens: 200,
+        temperature: 0.7,
       );
 
-      if (!aiResponse.success) {
-        return AiScriptGenerationResult.error(
-          aiResponse.errorMessage ?? 'AI 스크립트 생성에 실패했습니다.',
+      if (scriptResult.isFailure) {
+        return Result.failure(
+          'AI 스크립트 생성 실패: ${scriptResult.errorMessageOrNull}',
+          null,
         );
       }
 
-      // 데이터베이스에 저장 (선택적)
-      AiScript? savedScript;
-      if (saveToDatabase) {
-        savedScript = await _databaseService.saveAiScript(
-          studySessionId: studySessionId,
-          userId: userId,
-          koreanInput: koreanInput.trim(),
-          englishScript: aiResponse.englishScript,
-        );
+      final englishScript = scriptResult.dataOrNull!;
 
-        if (savedScript == null) {
-          // 저장에 실패했지만 AI 응답은 성공한 경우
-          // 임시 AiScript 객체 생성
-          savedScript = AiScript(
-            id: _uuid.v4(),
-            studySessionId: studySessionId,
-            userId: userId,
-            koreanInput: koreanInput.trim(),
-            englishScript: aiResponse.englishScript,
-            createdAt: DateTime.now(),
-          );
-        }
-      } else {
-        // 저장하지 않는 경우 임시 객체 생성
-        savedScript = AiScript(
-          id: _uuid.v4(),
-          studySessionId: studySessionId,
-          userId: userId,
-          koreanInput: koreanInput.trim(),
-          englishScript: aiResponse.englishScript,
-          createdAt: DateTime.now(),
-        );
-      }
+      // AI 스크립트 데이터 생성
+      final scriptData = {
+        'user_id': userId,
+        'korean_input': koreanInput,
+        'english_script': englishScript,
+        'basic_prompt': basicPrompt,
+        'context': context ?? 'general',
+        'difficulty': difficulty ?? 'intermediate',
+        'topic': topic,
+        'study_group_id': studyGroupId,
+        'created_at': DateTime.now().toIso8601String(),
+      };
 
-      return AiScriptGenerationResult.success(savedScript);
+      // 데이터베이스에 저장
+      final response =
+          await _supabase
+              .from('ai_scripts')
+              .insert(scriptData)
+              .select()
+              .single();
+
+      return Result.success(AIScript.fromJson(response));
     } catch (e) {
-      return AiScriptGenerationResult.error('예상치 못한 오류가 발생했습니다: $e');
+      return Result.failure('AI 스크립트 생성 중 오류가 발생했습니다.', e);
     }
   }
 
-  /// 사용자의 AI 스크립트 히스토리 조회
-  Future<List<AiScript>> getUserScriptHistory(String userId) async {
-    return await _databaseService.getAiScriptsByUserId(userId);
+  /// 프롬프트 생성
+  String _buildPrompt(String koreanInput, String? basicPrompt) {
+    final buffer = StringBuffer();
+
+    buffer.writeln(
+      'Create an English script based on the following Korean input:',
+    );
+    buffer.writeln('Korean Input: $koreanInput');
+
+    if (basicPrompt != null && basicPrompt.isNotEmpty) {
+      buffer.writeln('Additional Instructions: $basicPrompt');
+    }
+
+    buffer.writeln(
+      '\nPlease provide a natural, conversational English script that matches the Korean input.',
+    );
+
+    return buffer.toString();
   }
 
-  /// 특정 스터디 세션의 AI 스크립트 목록 조회
-  Future<List<AiScript>> getSessionScripts(String sessionId) async {
-    return await _databaseService.getAiScriptsBySessionId(sessionId);
+  /// AI 스크립트 생성 (Create)
+  Future<Result<AIScript>> createScript(AIScript script) async {
+    try {
+      final response =
+          await _supabase
+              .from('ai_scripts')
+              .insert(script.toJson())
+              .select()
+              .single();
+
+      return Result.success(AIScript.fromJson(response));
+    } catch (e) {
+      return Result.failure('AI 스크립트 생성 중 오류가 발생했습니다.', e);
+    }
   }
 
-  /// 최근 AI 스크립트 조회
-  Future<List<AiScript>> getRecentScripts(
-    String userId, {
-    int limit = 10,
+  /// AI 스크립트 조회 (Read)
+  Future<Result<AIScript>> getScript(String scriptId) async {
+    try {
+      final response =
+          await _supabase
+              .from('ai_scripts')
+              .select()
+              .eq('id', scriptId)
+              .single();
+
+      return Result.success(AIScript.fromJson(response));
+    } catch (e) {
+      return Result.failure('AI 스크립트 조회 중 오류가 발생했습니다.', e);
+    }
+  }
+
+  /// AI 스크립트 목록 조회 (Read)
+  Future<Result<List<AIScript>>> getScripts({
+    String? userId,
+    String? context,
+    String? studyGroupId,
+    int page = 0,
+    int pageSize = 20,
   }) async {
-    return await _databaseService.getRecentAiScripts(userId, limit: limit);
+    try {
+      var query = _supabase.from('ai_scripts').select();
+
+      if (userId != null) {
+        query = query.eq('user_id', userId);
+      }
+
+      if (context != null) {
+        query = query.eq('context', context);
+      }
+
+      if (studyGroupId != null) {
+        query = query.eq('study_group_id', studyGroupId);
+      }
+
+      final response = await query
+          .order('created_at', ascending: false)
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+
+      final scripts =
+          (response as List).map((json) => AIScript.fromJson(json)).toList();
+
+      return Result.success(scripts);
+    } catch (e) {
+      return Result.failure('AI 스크립트 목록 조회 중 오류가 발생했습니다.', e);
+    }
   }
 
-  /// AI 스크립트 삭제
-  Future<bool> deleteScript(String scriptId) async {
-    return await _databaseService.deleteAiScript(scriptId);
+  /// AI 스크립트 업데이트 (Update)
+  Future<Result<AIScript>> updateScript({
+    required String scriptId,
+    String? koreanInput,
+    String? englishScript,
+    String? basicPrompt,
+    String? context,
+    String? difficulty,
+    String? topic,
+  }) async {
+    try {
+      final updateData = <String, dynamic>{
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+
+      if (koreanInput != null) updateData['korean_input'] = koreanInput;
+      if (englishScript != null) updateData['english_script'] = englishScript;
+      if (basicPrompt != null) updateData['basic_prompt'] = basicPrompt;
+      if (context != null) updateData['context'] = context;
+      if (difficulty != null) updateData['difficulty'] = difficulty;
+      if (topic != null) updateData['topic'] = topic;
+
+      final response =
+          await _supabase
+              .from('ai_scripts')
+              .update(updateData)
+              .eq('id', scriptId)
+              .select()
+              .single();
+
+      return Result.success(AIScript.fromJson(response));
+    } catch (e) {
+      return Result.failure('AI 스크립트 업데이트 중 오류가 발생했습니다.', e);
+    }
   }
 
-  /// 특정 AI 스크립트 조회
-  Future<AiScript?> getScript(String scriptId) async {
-    return await _databaseService.getAiScriptById(scriptId);
-  }
+  /// AI 스크립트 삭제 (Delete)
+  Future<Result<void>> deleteScript(String scriptId) async {
+    try {
+      await _supabase.from('ai_scripts').delete().eq('id', scriptId);
 
-  /// 빠른 번역 (데이터베이스 저장 없이)
-  /// 실시간 대화 중 즉석에서 사용할 때 유용
-  Future<String?> quickTranslate(String koreanInput) async {
-    if (koreanInput.trim().isEmpty) return null;
-
-    final response = await _aiApiService.generateEnglishScript(
-      koreanInput.trim(),
-    );
-    return response.success ? response.englishScript : null;
-  }
-}
-
-/// AI 스크립트 생성 결과를 담는 클래스
-class AiScriptGenerationResult {
-  final AiScript? script;
-  final String? errorMessage;
-  final bool success;
-  final bool isFromCache;
-
-  AiScriptGenerationResult._({
-    this.script,
-    this.errorMessage,
-    required this.success,
-    this.isFromCache = false,
-  });
-
-  factory AiScriptGenerationResult.success(
-    AiScript script, {
-    bool isFromCache = false,
-  }) {
-    return AiScriptGenerationResult._(
-      script: script,
-      success: true,
-      isFromCache: isFromCache,
-    );
-  }
-
-  factory AiScriptGenerationResult.error(String errorMessage) {
-    return AiScriptGenerationResult._(
-      errorMessage: errorMessage,
-      success: false,
-    );
+      return const Result.success(null);
+    } catch (e) {
+      return Result.failure('AI 스크립트 삭제 중 오류가 발생했습니다.', e);
+    }
   }
 }

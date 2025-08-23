@@ -343,32 +343,23 @@ class PointService {
     }
   }
 
-  /// 학습 완료 시 포인트 적립
-  Future<Result<PointTransaction>> earnPointsForLearning({
+  /// 학습 세션 완료로 인한 포인트 지급
+  Future<Result<PointTransaction>> earnPointsForLearningSession({
     required String userId,
     required String sessionId,
-    required int studyTime,
-    required int comprehensionScore,
+    required int amount,
+    String description = '학습 세션 완료',
   }) async {
     try {
-      // 학습 시간과 이해도에 따른 포인트 계산
-      int basePoints = (studyTime / 60).floor(); // 1분당 1포인트
-      int bonusPoints = (comprehensionScore / 10).floor(); // 이해도 10점당 1포인트
-      int totalPoints = basePoints + bonusPoints;
-
-      if (totalPoints <= 0) {
-        totalPoints = 1; // 최소 1포인트
-      }
-
       return await earnPoints(
         userId: userId,
-        amount: totalPoints,
-        description: '학습 완료 보상 ($studyTime분, 이해도: $comprehensionScore점)',
-        referenceType: 'learning_session',
+        amount: amount,
+        description: description,
+        referenceType: 'study_group',
         referenceId: sessionId,
       );
     } catch (e) {
-      return Result.failure('학습 포인트 적립 중 오류가 발생했습니다.', e);
+      return Result.failure('학습 세션 포인트 지급 중 오류가 발생했습니다.', e);
     }
   }
 

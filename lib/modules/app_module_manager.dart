@@ -7,6 +7,7 @@ import 'study/study_module.dart';
 import 'user/user_module.dart';
 import 'report/report_module.dart';
 import 'point/point_module.dart';
+import 'ai/ai_module.dart';
 
 /// 앱 전체 모듈을 관리하는 매니저
 class AppModuleManager {
@@ -24,6 +25,7 @@ class AppModuleManager {
   late final UserModule _userModule;
   late final ReportModule _reportModule;
   late final PointModule _pointModule;
+  late final AIModule _aiModule;
 
   bool _isInitialized = false;
 
@@ -54,6 +56,9 @@ class AppModuleManager {
   /// Point 모듈 가져오기
   PointModule get pointModule => _pointModule;
 
+  /// AI 모듈 가져오기
+  AIModule get aiModule => _aiModule;
+
   /// 초기화 상태 확인
   bool get isInitialized => _isInitialized;
 
@@ -76,6 +81,7 @@ class AppModuleManager {
       _userModule = UserModule.instance;
       _reportModule = ReportModule(_supabaseClient);
       _pointModule = PointModule(_supabaseClient);
+      _aiModule = AIModule();
 
       // 각 모듈 초기화
       await Future.wait([
@@ -86,6 +92,7 @@ class AppModuleManager {
         _userModule.initialize(),
         _reportModule.initialize(),
         _pointModule.initialize(),
+        _aiModule.initialize(),
       ]);
 
       _isInitialized = true;
@@ -111,6 +118,7 @@ class AppModuleManager {
         _userModule.dispose(),
         _reportModule.dispose(),
         _pointModule.dispose(),
+        _aiModule.dispose(),
       ]);
 
       // Core 모듈 정리
