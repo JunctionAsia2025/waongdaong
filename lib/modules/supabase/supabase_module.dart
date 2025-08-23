@@ -15,9 +15,12 @@ class SupabaseModule {
   late final AuthService _authService;
   late final DatabaseService _databaseService;
   late final StorageService _storageService;
+  bool _isInitialized = false;
 
   /// 모듈 초기화
   Future<void> initialize() async {
+    if (_isInitialized) return;
+
     await Supabase.initialize(
       url: SupabaseConfig.supabaseUrl,
       anonKey: SupabaseConfig.supabaseAnonKey,
@@ -26,6 +29,8 @@ class SupabaseModule {
     _authService = AuthService();
     _databaseService = DatabaseService();
     _storageService = StorageService();
+
+    _isInitialized = true;
   }
 
   /// 인증 서비스 접근자
@@ -41,5 +46,5 @@ class SupabaseModule {
   SupabaseClient get client => Supabase.instance.client;
 
   /// 모듈이 초기화되었는지 확인
-  bool get isInitialized => true;
+  bool get isInitialized => _isInitialized;
 }
