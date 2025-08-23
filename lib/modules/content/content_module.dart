@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'services/content_service.dart';
+import 'services/scrap_service.dart';
 
 /// Content 모듈 - 콘텐츠 관리
 class ContentModule {
@@ -7,13 +8,18 @@ class ContentModule {
   static const String version = '1.0.0';
 
   late final ContentService _contentService;
+  late final ScrapService _scrapService;
 
   ContentModule(SupabaseClient supabaseClient) {
     _contentService = ContentService(supabaseClient);
+    _scrapService = ScrapService(supabaseClient);
   }
 
   /// Content 서비스 가져오기
   ContentService get contentService => _contentService;
+
+  /// Scrap 서비스 가져오기
+  ScrapService get scrapService => _scrapService;
 
   /// 모듈 초기화
   Future<void> initialize() async {
