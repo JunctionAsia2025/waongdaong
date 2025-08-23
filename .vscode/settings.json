@@ -1,0 +1,13 @@
+{
+    "dart.flutterSdkPath": null,
+    "dart.sdkPath": null,
+    "dart.debugExternalPackageLibraries": false,
+    "dart.debugSdkLibraries": false,
+    "dart.showInspectorNotificationsForWidgetErrors": true,
+    "dart.hotReloadOnSave": "all",
+    "dart.hotRestartOnSave": "never",
+    "files.autoSave": "off",
+    "editor.formatOnSave": true,
+    "dart.previewFlutterUiGuides": true,
+    "dart.previewFlutterUiGuidesCustomTracking": true
+}
