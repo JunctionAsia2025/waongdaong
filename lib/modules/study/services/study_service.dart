@@ -1,11 +1,15 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/utils/result.dart';
 import '../models/study_group.dart';
+import '../../ai_topic/models/discussion_topics.dart';
+import '../../ai_topic/ai_topic_module.dart';
+import '../../content/services/content_service.dart';
 
 class StudyService {
   final SupabaseClient _supabase;
+  final ContentService _contentService;
 
-  StudyService(this._supabase);
+  StudyService(this._supabase, this._contentService);
 
   /// 스터디그룹 생성
   Future<Result<StudyGroup>> createStudyGroup({
@@ -432,6 +436,108 @@ class StudyService {
       return Result.success(stats);
     } catch (e) {
       return Result.failure('스터디 그룹 통계를 조회하는 중 오류가 발생했습니다.', e);
+    }
+  }
+
+  /// 스크랩된 콘텐츠 기반으로 스터디 그룹용 토론 주제 3개 생성
+  Future<Result<DiscussionTopics>> generateDiscussionTopicsFromScrap({
+    required String userId,
+    required String contentId,
+    String? additionalContext,
+  }) async {
+    try {
+      // 1. 콘텐츠 정보 가져오기
+      final contentResult = await _contentService.getContentById(contentId);
+      if (contentResult.isFailure) {
+        return Result.failure(
+          '콘텐츠를 찾을 수 없습니다: ${contentResult.errorMessageOrNull}',
+          null,
+        );
+      }
+
+      final content = contentResult.dataOrNull!;
+
+      // 2. AI를 통해 스터디 그룹용 토론 주제 생성
+      final topicsResult = await AiTopicModule.instance.aiTopicService
+          .generateDiscussionTopics(
+            contentText: content.content,
+            contentType: content.contentType,
+            additionalContext: '${additionalContext ?? ''} 스터디 그룹 토론용',
+          );
+
+      return topicsResult;
+    } catch (e) {
+      return Result.failure('토론 주제 생성 중 오류가 발생했습니다.', e);
+    }
+  }
+
+  /// 콘텐츠 ID로 직접 스터디 그룹용 토론 주제 생성
+  Future<Result<DiscussionTopics>> generateDiscussionTopics({
+    required String contentId,
+    String? additionalContext,
+  }) async {
+    try {
+      // 1. 콘텐츠 정보 가져오기
+      final contentResult = await _contentService.getContentById(contentId);
+      if (contentResult.isFailure) {
+        return Result.failure(
+          '콘텐츠를 찾을 수 없습니다: ${contentResult.errorMessageOrNull}',
+          null,
+        );
+      }
+
+      final content = contentResult.dataOrNull!;
+
+      // 2. AI를 통해 스터디 그룹용 토론 주제 생성
+      final topicsResult = await AiTopicModule.instance.aiTopicService
+          .generateDiscussionTopics(
+            contentText: content.content,
+            contentType: content.contentType,
+            additionalContext: '${additionalContext ?? ''} 스터디 그룹 토론용',
+          );
+
+      return topicsResult;
+    } catch (e) {
+      return Result.failure('토론 주제 생성 중 오류가 발생했습니다.', e);
+    }
+  }
+
+  /// 랜덤 콘텐츠 기반으로 스터디 그룹용 토론 주제 3개 생성
+  Future<Result<DiscussionTopics>> generateDiscussionTopicsFromRandomContent({
+    String? additionalContext,
+  }) async {
+    try {
+      // 1. 랜덤 콘텐츠 하나 가져오기 (모든 콘텐츠에서)
+      final contentsResult = await _contentService.getContents(
+        page: 0,
+        pageSize: 3, // 3개 중에서 랜덤 선택
+      );
+
+      if (contentsResult.isFailure ||
+          contentsResult.dataOrNull == null ||
+          contentsResult.dataOrNull!.isEmpty) {
+        return Result.failure('사용 가능한 콘텐츠를 찾을 수 없습니다.', null);
+      }
+
+      final contents = contentsResult.dataOrNull!;
+
+      // 2. 랜덤으로 하나 선택
+      final randomIndex =
+          DateTime.now().millisecondsSinceEpoch % contents.length;
+      final selectedContent = contents[randomIndex];
+
+      // 3. AI를 통해 스터디 그룹용 토론 주제 생성
+      final topicsResult = await AiTopicModule.instance.aiTopicService
+          .generateDiscussionTopics(
+            contentText: selectedContent.content,
+            contentType: selectedContent.contentType,
+            additionalContext:
+                '${additionalContext ?? ''} 스터디 그룹 토론용 (콘텐츠: ${selectedContent.title})',
+          );
+
+      return topicsResult;
+    } catch (e) {
+      return Result.failure('랜덤 콘텐츠 기반 토론 주제 생성 중 오류가 발생했습니다.', e);
     }
   }
 }

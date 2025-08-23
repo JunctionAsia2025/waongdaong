@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'modules/supabase/supabase_module.dart';
 import 'modules/ai_script/ai_script_module.dart';
 import 'modules/ai_script/controllers/ai_script_controller.dart';
+import 'modules/app_module_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -159,6 +160,35 @@ class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
   final AiScriptController _aiController = AiScriptController();
   String _testResult = '';
+  bool _isModulesInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeModules();
+  }
+
+  Future<void> _initializeModules() async {
+    try {
+      setState(() {
+        _testResult = 'AppModuleManager 초기화 중...';
+      });
+
+      // AppModuleManager를 통해 모든 모듈 초기화
+      await AppModuleManager.instance.initialize(
+        SupabaseModule.instance.client,
+      );
+
+      setState(() {
+        _testResult = '모든 모듈 초기화 완료!';
+        _isModulesInitialized = true;
+      });
+    } catch (e) {
+      setState(() {
+        _testResult = '모듈 초기화 오류: $e';
+      });
+    }
+  }
 
   void _incrementCounter() {
     setState(() {
@@ -198,6 +228,51 @@ class _MyHomePageState extends State<MyHomePage> {
     } catch (e) {
       setState(() {
         _testResult = '테스트 오류: $e';
+      });
+    }
+  }
+
+  // 랜덤 콘텐츠 기반 토론 주제 생성 테스트
+  Future<void> _testDiscussionTopics() async {
+    if (!_isModulesInitialized) {
+      setState(() {
+        _testResult = '모듈 초기화 중입니다. 잠시 후 다시 시도해주세요.';
+      });
+      return;
+    }
+
+    setState(() {
+      _testResult = '랜덤 콘텐츠 기반 토론 주제 생성 중...';
+    });
+
+    try {
+      // 랜덤 콘텐츠를 선택해서 토론 주제 생성
+      final result = await AppModuleManager.instance.studyModule.studyService
+          .generateDiscussionTopicsFromRandomContent(
+            additionalContext: '영어 학습 스터디 그룹용',
+          );
+
+      if (result.isSuccess && result.dataOrNull != null) {
+        final topics = result.dataOrNull!;
+        setState(() {
+          _testResult = '''
+랜덤 콘텐츠 기반 토론 주제 생성 성공! 
+
+주제 1: ${topics.topic1}
+
+주제 2: ${topics.topic2}
+
+주제 3: ${topics.topic3}
+''';
+        });
+      } else {
+        setState(() {
+          _testResult = '토론 주제 생성 실패: ${result.errorMessageOrNull}';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _testResult = '토론 주제 생성 오류: $e';
       });
     }
   }
@@ -256,6 +331,16 @@ class _MyHomePageState extends State<MyHomePage> {
                   _aiController.isLoading
                       ? const CircularProgressIndicator()
                       : const Text('AI 세 가지 스타일 테스트'),
+            ),
+            const SizedBox(height: 16),
+
+            ElevatedButton(
+              onPressed: _isModulesInitialized ? _testDiscussionTopics : null,
+              child: Text(
+                _isModulesInitialized
+                    ? '랜덤 콘텐츠 기반 토론 주제 생성 테스트'
+                    : '모듈 초기화 중...',
+              ),
             ),
             const SizedBox(height: 16),
             if (_testResult.isNotEmpty)
