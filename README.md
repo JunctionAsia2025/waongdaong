@@ -194,7 +194,7 @@ erDiagram
         timestamp updated_at
     }
     
-    %% 리포트 관련
+    %% 리포트 관련 (통합 모델)
     reports {
         uuid id PK
         uuid user_id FK
@@ -203,31 +203,10 @@ erDiagram
         text title
         text content
         text report_type
+        text ai_feedback
+        text user_reflection
         timestamp created_at
         timestamp updated_at
-    }
-    
-    study_reports {
-        uuid id PK
-        uuid study_group_id FK
-        text summary
-        decimal participation_rate
-        text feedback
-        text learning_direction
-        text reflection
-        timestamp created_at
-    }
-    
-    user_learning_reports {
-        uuid id PK
-        uuid user_id FK
-        text period
-        integer total_study_time
-        integer completed_contents
-        integer earned_points
-        text weak_areas
-        text recommendations
-        timestamp created_at
     }
     
     %% 포인트 관련
@@ -268,7 +247,6 @@ erDiagram
     users ||--o{ user_scraps : "1:N"
     users ||--|| user_points : "1:1"
     users ||--o{ point_transactions : "1:N"
-    users ||--o{ user_learning_reports : "1:N"
     users ||--o{ reports : "1:N"
     
     contents ||--o{ learning_sessions : "1:N"
@@ -281,7 +259,6 @@ erDiagram
     study_groups ||--o{ study_group_participants : "1:N"
     study_groups ||--o{ study_participant_records : "1:N"
     study_groups ||--o{ ai_scripts : "1:N"
-    study_groups ||--|| study_reports : "1:1"
     study_groups ||--o{ reports : "1:N"
     study_groups }o--|| users : "N:1"
     
@@ -328,17 +305,36 @@ AI 리포트 생성 → 포인트 적립
 
 ## 📊 리포트 시스템
 
+### **통합 리포트 모델 (Report)**
+- **유형**: 개인학습 리포트와 그룹학습 리포트를 하나의 테이블로 통합
+- **구조**: `Report` 모델로 구현되어 `ReportService`를 통해 관리
+- **AI 피드백**: `aiFeedback` 필드에 AI가 생성한 분석 결과 저장
+- **사용자 후기**: `userReflection` 필드에 사용자가 직접 입력하는 소감 저장
+
 ### **개인학습 리포트**
-- **학습 시간 분석**: 총 학습 시간, 평균 세션 시간
-- **성취도 분석**: 퀴즈 점수, 완료한 콘텐츠 수
-- **취약점 분석**: AI가 분석한 개선이 필요한 영역
-- **학습 방향성**: AI가 제안하는 향후 학습 계획
+- **연결**: `learning_session_id`로 개별 학습 세션과 연결
+- **생성**: `createLearningReport()` 메서드로 생성
+- **AI 분석**: 학습 패턴, 취약점, 개선 방향을 AI가 자동 분석
+- **사용자 입력**: 학습 후 느낀 점이나 소감을 직접 작성
 
 ### **그룹학습 리포트**
-- **참여도 분석**: 발언 횟수, 시간, 품질
-- **협업 효과**: 그룹 내 역할, 상호작용 품질
-- **학습 성과**: 그룹 전체의 학습 진행 상황
-- **개선점**: 그룹 학습 효율성 향상을 위한 제안
+- **연결**: `study_group_id`로 스터디 그룹과 연결
+- **생성**: `createStudyGroupReport()` 메서드로 생성
+- **AI 분석**: 그룹 참여도, 협업 효과, 전체 성과를 AI가 분석
+- **사용자 입력**: 그룹 학습에 대한 개인적인 후기 작성
+
+### **AI 피드백 vs 사용자 후기**
+| 구분 | AI 피드백 (aiFeedback) | 사용자 후기 (userReflection) |
+|------|------------------------|------------------------------|
+| **생성자** | AI 자동 생성 | 사용자 직접 입력 |
+| **내용** | 객관적 분석 결과 | 주관적 경험담 |
+| **용도** | 학습 방향 제시 | 개인적 성찰 및 기록 |
+| **업데이트** | 학습 데이터 기반 자동 | 사용자가 언제든 수정 가능 |
+
+### **실제 구현된 기능**
+- **CRUD 작업**: `ReportService`를 통한 생성, 조회, 수정, 삭제
+- **타입 안전성**: `ReportType` 열거형으로 개인학습/그룹학습 구분
+- **사용자별 관리**: `getUserReports()`, `getStudyGroupReports()` 메서드
 
 ## 🎯 포인트 시스템
 
