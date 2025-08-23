@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'modules/supabase/supabase_module.dart';
+import 'modules/ai_script/ai_script_module.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Supabase 모듈 초기화
   await SupabaseModule.instance.initialize();
+
+  // AI 스크립트 모듈 초기화 (실제 Gemini API 사용)
+  AiScriptModule.instance.initialize(useMockApi: false);
 
   runApp(const MyApp());
 }
