@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'modules/supabase/supabase_module.dart';
 import 'modules/ai_script/ai_script_module.dart';
+import 'modules/ai_script/controllers/ai_script_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -156,11 +157,49 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
+  final AiScriptController _aiController = AiScriptController();
+  String _testResult = '';
 
   void _incrementCounter() {
     setState(() {
       _counter++;
     });
+  }
+
+  // 세 가지 스타일 스크립트 생성 테스트
+  Future<void> _testThreeStyleScripts() async {
+    setState(() {
+      _testResult = '테스트 중...';
+    });
+
+    try {
+      final result = await _aiController.generateThreeStyleScripts(
+        koreanInput: '안녕하세요, 만나서 반갑습니다',
+        basicPrompt: '첫 만남에서의 인사',
+      );
+
+      if (result != null) {
+        setState(() {
+          _testResult = '''
+테스트 성공! 
+
+격식있는: ${result.formal}
+
+편한: ${result.casual}
+
+재치있는: ${result.witty}
+''';
+        });
+      } else {
+        setState(() {
+          _testResult = '테스트 실패: ${_aiController.errorMessage}';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _testResult = '테스트 오류: $e';
+      });
+    }
   }
 
   Future<void> _signOut() async {
@@ -191,7 +230,8 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ],
       ),
-      body: Center(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
@@ -208,6 +248,26 @@ class _MyHomePageState extends State<MyHomePage> {
               '$_counter',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed:
+                  _aiController.isLoading ? null : _testThreeStyleScripts,
+              child:
+                  _aiController.isLoading
+                      ? const CircularProgressIndicator()
+                      : const Text('AI 세 가지 스타일 테스트'),
+            ),
+            const SizedBox(height: 16),
+            if (_testResult.isNotEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(_testResult, style: const TextStyle(fontSize: 14)),
+              ),
           ],
         ),
       ),
