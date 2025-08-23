@@ -8,6 +8,7 @@ import 'user/user_module.dart';
 import 'report/report_module.dart';
 import 'point/point_module.dart';
 import 'ai/ai_module.dart';
+import 'ai_topic/ai_topic_module.dart';
 
 /// 앱 전체 모듈을 관리하는 매니저
 class AppModuleManager {
@@ -75,13 +76,22 @@ class AppModuleManager {
       // 각 모듈 인스턴스 생성
       _coreModule = CoreModule();
       _authModule = AuthModule(_supabaseClient);
+      _aiModule = AIModule();
       _contentModule = ContentModule(_supabaseClient);
+      _studyModule = StudyModule(
+        _supabaseClient,
+        _contentModule.contentService,
+      );
       _learningModule = LearningModule(_supabaseClient);
-      _studyModule = StudyModule(_supabaseClient);
       _userModule = UserModule.instance;
       _reportModule = ReportModule(_supabaseClient);
       _pointModule = PointModule(_supabaseClient);
-      _aiModule = AIModule();
+
+      // AI 모듈 먼저 초기화 (다른 모듈에서 의존성이 있을 수 있음)
+      await _aiModule.initialize();
+
+      // AI Topic 모듈 초기화 (AI 모듈 의존)
+      await AiTopicModule.instance.initialize(_aiModule);
 
       // 각 모듈 초기화
       await Future.wait([
@@ -92,7 +102,6 @@ class AppModuleManager {
         _userModule.initialize(),
         _reportModule.initialize(),
         _pointModule.initialize(),
-        _aiModule.initialize(),
       ]);
 
       _isInitialized = true;

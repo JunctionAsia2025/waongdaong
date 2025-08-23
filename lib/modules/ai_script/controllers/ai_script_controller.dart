@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/ai_script.dart';
+import '../models/three_style_script.dart';
 import '../services/ai_script_service.dart';
 import '../ai_script_module.dart';
 
@@ -13,6 +14,7 @@ class AiScriptController extends ChangeNotifier {
   String? _errorMessage;
   List<AIScript> _scripts = [];
   AIScript? _currentScript;
+  ThreeStyleScript? _currentThreeStyleScript;
 
   AiScriptController()
     : _aiScriptService = AiScriptModule.instance.aiScriptService;
@@ -22,7 +24,38 @@ class AiScriptController extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   List<AIScript> get scripts => List.unmodifiable(_scripts);
   AIScript? get currentScript => _currentScript;
+  ThreeStyleScript? get currentThreeStyleScript => _currentThreeStyleScript;
   bool get hasError => _errorMessage != null;
+
+  /// 세 가지 스타일의 영어 스크립트 생성 (격식있는, 편한, 재치있는)
+  Future<ThreeStyleScript?> generateThreeStyleScripts({
+    required String koreanInput,
+    String? basicPrompt,
+  }) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final result = await _aiScriptService.generateThreeStyleScripts(
+        koreanInput: koreanInput,
+        basicPrompt: basicPrompt,
+      );
+
+      if (result.isSuccess && result.dataOrNull != null) {
+        _currentThreeStyleScript = result.dataOrNull!;
+        notifyListeners();
+        return result.dataOrNull;
+      } else {
+        _setError(result.errorMessageOrNull ?? '세 가지 스타일 스크립트 생성에 실패했습니다.');
+        return null;
+      }
+    } catch (e) {
+      _setError('예상치 못한 오류가 발생했습니다: $e');
+      return null;
+    } finally {
+      _setLoading(false);
+    }
+  }
 
   /// 한국어 입력으로 영어 스크립트 생성
   Future<AIScript?> generateScript({
