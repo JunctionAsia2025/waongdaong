@@ -21,7 +21,12 @@ class UserModule {
     }
 
     _userRepository = UserRepository();
-    _userService = UserService();
+    _userService = UserService(SupabaseModule.instance.client);
+  }
+
+  /// 모듈 정리
+  Future<void> dispose() async {
+    // 필요한 정리 작업이 있다면 여기에 구현
   }
 
   /// 사용자 리포지토리 접근자

@@ -1,6 +1,5 @@
 /// Supabase 프로젝트 설정
 class SupabaseConfig {
-  // TODO: 실제 Supabase 프로젝트 URL과 API 키로 교체하세요
   static const String supabaseUrl = 'https://gfgqzdefkewbubtmjdjk.supabase.co';
   static const String supabaseAnonKey =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmZ3F6ZGVma2V3YnVidG1qZGprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4OTkxNjcsImV4cCI6MjA3MTQ3NTE2N30.rKVsjT3UPrgKjy5C1po0oPBdjQlu-vWn8C-U2DiUO_8';
