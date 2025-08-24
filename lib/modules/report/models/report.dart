@@ -32,10 +32,7 @@ class Report {
       id: json['id'] as String,
       userId: json['user_id'] as String,
       learningSessionId: json['learning_session_id'] as String?,
-      reportType: ReportType.values.firstWhere(
-        (e) => e.name == json['report_type'],
-        orElse: () => ReportType.individualLearning,
-      ),
+      reportType: _parseReportType(json['report_type'] as String),
       studyGroupId: json['study_group_id'] as String?,
       title: json['title'] as String,
       content: json['content'] as String,
@@ -49,12 +46,24 @@ class Report {
     );
   }
 
+  /// 데이터베이스 문자열을 ReportType으로 파싱
+  static ReportType _parseReportType(String typeString) {
+    switch (typeString) {
+      case 'individual_learning':
+        return ReportType.individualLearning;
+      case 'study_group':
+        return ReportType.studyGroup;
+      default:
+        return ReportType.individualLearning;
+    }
+  }
+
   /// Report 객체를 JSON으로 변환
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'user_id': userId,
-      'report_type': reportType.name,
+      'report_type': _getReportTypeString(reportType),
       'learning_session_id': learningSessionId,
       'study_group_id': studyGroupId,
       'title': title,
@@ -64,6 +73,16 @@ class Report {
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };
+  }
+
+  /// 데이터베이스 제약 조건에 맞는 report_type 문자열 반환
+  String _getReportTypeString(ReportType type) {
+    switch (type) {
+      case ReportType.individualLearning:
+        return 'individual_learning';
+      case ReportType.studyGroup:
+        return 'study_group';
+    }
   }
 
   /// Report 객체 복사 및 수정

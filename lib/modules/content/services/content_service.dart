@@ -17,34 +17,48 @@ class ContentService {
     int pageSize = 20,
   }) async {
     try {
+      print('🔍 ContentService: contents 테이블 쿼리 시작');
+      print('🔍 페이지: $page, 사이즈: $pageSize');
+
       // 기본 쿼리 시작
-      var query = _supabase.from('content').select();
+      var query = _supabase.from('contents').select();
+      print('🔍 기본 쿼리 생성됨');
 
       // 필터링 적용
       if (contentType != null) {
         query = query.eq('content_type', contentType);
+        print('🔍 contentType 필터 적용: $contentType');
       }
 
       if (difficultyLevel != null) {
         query = query.eq('difficulty_level', difficultyLevel);
+        print('🔍 difficultyLevel 필터 적용: $difficultyLevel');
       }
 
       if (categories != null && categories.isNotEmpty) {
         // 배열 필터링: categories 컬럼에 categories 배열이 포함되는지 확인
         query = query.overlaps('categories', categories);
+        print('🔍 categories 필터 적용: $categories');
       }
 
+      print('🔍 쿼리 실행 중...');
       // 정렬 및 페이지네이션 적용
       final response = await query
           .order('created_at', ascending: false)
           .range(page * pageSize, (page + 1) * pageSize - 1);
 
+      print('🔍 쿼리 응답 받음: ${response.runtimeType}');
+      print('🔍 응답 데이터: $response');
+
       final contents =
           (response as List).map((json) => Content.fromJson(json)).toList();
 
+      print('🔍 Content 객체 변환 완료: ${contents.length}개');
       return Result.success(contents);
-    } catch (e) {
-      return Result.failure('콘텐츠를 가져오는 중 오류가 발생했습니다.', e);
+    } catch (e, stackTrace) {
+      print('🚨 ContentService 오류: $e');
+      print('🚨 스택 트레이스: $stackTrace');
+      return Result.failure('콘텐츠를 가져오는 중 오류가 발생했습니다: $e', e);
     }
   }
 
@@ -52,7 +66,7 @@ class ContentService {
   Future<Result<Content>> getContentById(String id) async {
     try {
       final response =
-          await _supabase.from('content').select().eq('id', id).single();
+          await _supabase.from('contents').select().eq('id', id).single();
 
       final content = Content.fromJson(response);
       return Result.success(content);
@@ -69,7 +83,7 @@ class ContentService {
   }) async {
     try {
       final response = await _supabase
-          .from('content')
+          .from('contents')
           .select()
           .overlaps('categories', userInterests)
           .order('created_at', ascending: false)
@@ -94,7 +108,7 @@ class ContentService {
     try {
       // 기본 검색 쿼리 시작
       var searchQuery = _supabase
-          .from('content')
+          .from('contents')
           .select()
           .or('title.ilike.%$query%,content.ilike.%$query%');
 
@@ -141,7 +155,7 @@ class ContentService {
   Future<Result<Map<String, int>>> getContentDifficultyStats() async {
     try {
       final response = await _supabase
-          .from('content')
+          .from('contents')
           .select('difficulty_level');
 
       final stats = <String, int>{};
@@ -165,7 +179,7 @@ class ContentService {
     try {
       // 간단한 방법: 모든 데이터를 가져와서 클라이언트에서 카운트
       // 실제 프로덕션에서는 RPC 함수나 다른 방법 사용 권장
-      var query = _supabase.from('content').select('id');
+      var query = _supabase.from('contents').select('id');
 
       // 필터링 적용
       if (contentType != null) {
@@ -190,7 +204,7 @@ class ContentService {
   /// 콘텐츠 타입별 통계
   Future<Result<Map<String, int>>> getContentTypeStats() async {
     try {
-      final response = await _supabase.from('content').select('content_type');
+      final response = await _supabase.from('contents').select('content_type');
 
       final stats = <String, int>{};
       for (final item in response as List) {
@@ -212,7 +226,7 @@ class ContentService {
     try {
       // 학습 세션이 많은 순으로 정렬 (실제로는 RPC 함수나 조인 필요)
       final response = await _supabase
-          .from('content')
+          .from('contents')
           .select()
           .order('created_at', ascending: false) // 임시로 생성일 기준
           .range(page * pageSize, (page + 1) * pageSize - 1);

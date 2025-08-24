@@ -5,6 +5,7 @@ import '../modules/supabase/supabase_module.dart';
 import '../modules/app_module_manager.dart';
 import '../presentation/splash/pages/splash_page.dart';
 import '../presentation/auth/pages/login_page.dart';
+import '../presentation/content/pages/content_feed_page.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -96,10 +97,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
     final authService = SupabaseModule.instance.auth;
 
     if (authService.isAuthenticated) {
-      // TODO: MainTabPage로 이동 (구현되면 연결)
-      return const Scaffold(
-        body: Center(child: Text('Main Tab Page - TODO\n(로그인된 상태)')),
-      );
+      return const ContentFeedPage();
     } else {
       return Navigator(
         onGenerateRoute: (settings) => MaterialPageRoute(
