@@ -4,6 +4,7 @@ import 'theme/app_theme.dart';
 import '../modules/supabase/supabase_module.dart';
 import '../modules/app_module_manager.dart';
 import '../presentation/splash/pages/splash_page.dart';
+import '../presentation/auth/pages/login_page.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -100,9 +101,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
         body: Center(child: Text('Main Tab Page - TODO\n(로그인된 상태)')),
       );
     } else {
-      // TODO: LoginPage로 이동 (구현되면 연결)
-      return const Scaffold(
-        body: Center(child: Text('Login Page - TODO\n(로그인 필요)')),
+      return Navigator(
+        onGenerateRoute: (settings) => MaterialPageRoute(
+          builder: (_) => const LoginPage(),
+        ),
       );
     }
   }
