@@ -5,9 +5,7 @@ import '../../core/utils/result.dart';
 /// AI API 호출을 전담하는 서비스
 class AIApiService {
   // Google Gemini 2.0 Flash 모델 사용
-  //static const String _apiKey = 'AIzaSyD3daz8BpxjuwhjC8ZUz6ebLOQPfpBHpeo';
-  //static const String _apiKey = 'AIzaSyDxBUw5RM5T1kgUN964APCeZKlc3CHO424';
-  static const String _apiKey = 'AIzaSyCx_jlm7e-kq5aUtqnNxzzJU4gcKOM2nZ0';
+  static const String _apiKey = 'AIzaSyBnwdI5i-aPYkpKa9iw8pq9VmjJLL4H6-M';
   static const String _baseUrl =
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
 

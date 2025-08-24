@@ -403,34 +403,8 @@ $contentText
     required Quiz quiz,
     required String userAnswer,
   }) async {
-    if (quiz.isVocabulary) {
-      // 단어 퀴즈는 정확한 매칭
-      final isCorrect =
-          userAnswer.trim().toLowerCase() ==
-          quiz.correctAnswer.trim().toLowerCase();
-      return (isCorrect, isCorrect ? quiz.points : 0, null);
-    }
-
-    // 요약/번역 퀴즈는 AI 평가
-    final prompt = '''
-다음 ${quiz.isSummary ? '요약' : '번역'} 답안을 평가해주세요.
-
-문제: ${quiz.question}
-${quiz.excerpt != null ? '원문: ${quiz.excerpt}' : ''}
-모범답안: ${quiz.correctAnswer}
-사용자답안: $userAnswer
-
-평가 기준:
-- 정확성 (50%)
-- 완성도 (30%)
-- 언어적 자연스러움 (20%)
-
-응답 형식:
-{
-  "score": 0-${quiz.points} 사이의 점수,
-  "feedback": "구체적인 피드백"
-}
-''';
+    // 모든 퀴즈 타입을 AI로 평가
+    final prompt = _buildEvaluationPrompt(quiz, userAnswer);
 
     try {
       final response = await _aiService.sendPrompt(prompt: prompt);
@@ -442,11 +416,92 @@ ${quiz.excerpt != null ? '원문: ${quiz.excerpt}' : ''}
       final evaluation = _parseAIResponse(response.dataOrNull ?? '').first;
       final score = evaluation['score'] as int;
       final feedback = evaluation['feedback'] as String;
-      final isCorrect = score >= (quiz.points * 0.7); // 70% 이상이면 정답
-
-      return (isCorrect, score, feedback);
+      // 유사도를 점수로 사용, 정답/오답 구분 없이 점수 그대로 반환
+      return (true, score, feedback);
     } catch (e) {
       return (false, 0, '평가 중 오류가 발생했습니다: $e');
+    }
+  }
+
+  /// 퀴즈 타입별 평가 프롬프트 생성
+  String _buildEvaluationPrompt(Quiz quiz, String userAnswer) {
+    switch (quiz.quizType) {
+      case QuizType.vocabulary:
+        return '''
+다음 단어 퀴즈에 대한 사용자 답안을 평가해주세요.
+
+[문제]
+${quiz.question}
+정답: ${quiz.correctAnswer}
+사용자답안: $userAnswer
+
+[평가 기준]
+- 정확성 (60%): 정답과 의미적으로 동일하거나 유사한가
+- 문맥 적합성 (40%): 주어진 문맥에서 적절한 단어인가
+
+[응답 형식]
+JSON 배열 형태로 다음 정보를 제공해주세요:
+[
+  {
+    "score": 0-${quiz.points} 사이의 점수,
+    "feedback": "구체적인 피드백"
+  }
+]
+
+응답은 순수 JSON 배열만 제공해주세요.
+''';
+
+      case QuizType.summary:
+        return '''
+다음 요약 퀴즈에 대한 사용자 답안을 평가해주세요.
+
+[문제]
+원문: ${quiz.excerpt}
+모범답안: ${quiz.correctAnswer}
+사용자답안: $userAnswer
+
+[평가 기준]
+- 정확성 (40%): 핵심 내용을 정확하게 파악했는가
+- 완성도 (30%): 요약이 충분히 완성되었는가
+- 자연스러움 (30%): 영어 표현이 자연스러운가
+
+[응답 형식]
+JSON 배열 형태로 다음 정보를 제공해주세요:
+[
+  {
+    "score": 0-${quiz.points} 사이의 점수,
+    "feedback": "구체적인 피드백"
+  }
+]
+
+응답은 순수 JSON 배열만 제공해주세요.
+''';
+
+      case QuizType.translation:
+        return '''
+다음 번역 퀴즈에 대한 사용자 답안을 평가해주세요.
+
+[문제]
+원문: ${quiz.excerpt}
+모범답안: ${quiz.correctAnswer}
+사용자답안: $userAnswer
+
+[평가 기준]
+- 정확성 (50%): 의미를 정확하게 번역했는가
+- 자연스러움 (30%): 한국어 표현이 자연스러운가
+- 문맥 이해 (20%): 문맥을 올바르게 이해했는가
+
+[응답 형식]
+JSON 배열 형태로 다음 정보를 제공해주세요:
+[
+  {
+    "score": 0-${quiz.points} 사이의 점수,
+    "feedback": "구체적인 피드백"
+  }
+]
+
+응답은 순수 JSON 배열만 제공해주세요.
+''';
     }
   }
 
@@ -585,34 +640,47 @@ ${quiz.excerpt != null ? '원문: ${quiz.excerpt}' : ''}
     String userAnswer,
     int timeSpent,
   ) async {
-    switch (quiz.quizType) {
-      case QuizType.vocabulary:
-        // 단어 퀴즈: 정답 여부만 확인
-        final isCorrect =
-            quiz.correctAnswer.toLowerCase().trim() ==
-            userAnswer.toLowerCase().trim();
-        final score = _calculateScore(quiz, isCorrect, timeSpent);
-        return (isCorrect, score, null);
-
-      case QuizType.summary:
-      case QuizType.translation:
-        // 요약/번역 퀴즈: AI 평가 수행
-        final aiEvaluation = await _evaluateWithAI(quiz, userAnswer);
-        final overallScore = aiEvaluation['overallScore'] as int;
-        final isCorrect = overallScore >= 70; // 70점 이상을 정답으로 간주
-        final score = _calculateScore(quiz, isCorrect, timeSpent);
-        return (isCorrect, score, aiEvaluation);
-    }
+    // 모든 퀴즈 타입을 AI로 평가
+    final aiEvaluation = await _evaluateWithAI(quiz, userAnswer);
+    final overallScore = aiEvaluation['overallScore'] as int;
+    // AI 점수를 기본으로 하고 시간 보너스/페널티 적용
+    final adjustedScore = _applyTimeBonus(overallScore, timeSpent);
+    return (true, adjustedScore, aiEvaluation);
   }
 
-  /// AI를 사용한 요약/번역 퀴즈 평가
+  /// AI를 사용한 모든 퀴즈 타입 평가
   Future<Map<String, dynamic>> _evaluateWithAI(
     Quiz quiz,
     String userAnswer,
   ) async {
     try {
       String prompt;
-      if (quiz.quizType == QuizType.summary) {
+      if (quiz.quizType == QuizType.vocabulary) {
+        prompt = '''
+다음 단어 퀴즈에 대한 사용자 답안을 평가해주세요.
+
+[문제]
+${quiz.question}
+정답: ${quiz.correctAnswer}
+사용자답안: $userAnswer
+
+[평가 기준]
+- 정확성 (60%): 정답과 의미적으로 동일하거나 유사한가
+- 문맥 적합성 (40%): 주어진 문맥에서 적절한 단어인가
+
+[응답 형식]
+JSON 형태로 다음 정보를 제공해주세요:
+{
+  "accuracyScore": 0-100,
+  "contextScore": 0-100,
+  "overallScore": 0-100,
+  "detailedFeedback": "구체적인 피드백",
+  "improvementTips": "개선을 위한 팁"
+}
+
+응답은 순수 JSON만 제공해주세요.
+''';
+      } else if (quiz.quizType == QuizType.summary) {
         prompt = '''
 다음 요약 퀴즈에 대한 사용자 답안을 평가해주세요.
 
@@ -694,31 +762,46 @@ JSON 형태로 다음 정보를 제공해주세요:
       // AI 서비스 실패 시 기본 평가 제공
     }
 
-    // 기본 평가 결과 반환
-    return {
-      'accuracyScore': 50,
-      'completenessScore': 50,
-      'fluencyScore': 50,
-      'overallScore': 50,
-      'detailedFeedback': 'AI 평가를 수행할 수 없어 기본 점수를 부여했습니다.',
-      'improvementTips': '답안을 다시 한번 검토해보세요.',
-    };
+    // 기본 평가 결과 반환 (퀴즈 타입별로 다르게)
+    if (quiz.quizType == QuizType.vocabulary) {
+      return {
+        'accuracyScore': 50,
+        'contextScore': 50,
+        'overallScore': 50,
+        'detailedFeedback': 'AI 평가를 수행할 수 없어 기본 점수를 부여했습니다.',
+        'improvementTips': '답안을 다시 한번 검토해보세요.',
+      };
+    } else if (quiz.quizType == QuizType.summary) {
+      return {
+        'accuracyScore': 50,
+        'completenessScore': 50,
+        'fluencyScore': 50,
+        'overallScore': 50,
+        'detailedFeedback': 'AI 평가를 수행할 수 없어 기본 점수를 부여했습니다.',
+        'improvementTips': '답안을 다시 한번 검토해보세요.',
+      };
+    } else {
+      // QuizType.translation
+      return {
+        'accuracyScore': 50,
+        'naturalnessScore': 50,
+        'contextScore': 50,
+        'overallScore': 50,
+        'detailedFeedback': 'AI 평가를 수행할 수 없어 기본 점수를 부여했습니다.',
+        'improvementTips': '답안을 다시 한번 검토해보세요.',
+      };
+    }
   }
 
-  /// 점수 계산
-  int _calculateScore(Quiz quiz, bool isCorrect, int timeSpent) {
-    if (!isCorrect) return 0;
-
-    int baseScore = quiz.points;
-
+  /// 시간 보너스/페널티 적용
+  int _applyTimeBonus(int baseScore, int timeSpent) {
     // 시간 보너스/페널티 (빠를수록 높은 점수)
     if (timeSpent <= 30) {
-      baseScore = (baseScore * 1.2).round(); // 20% 보너스
+      return (baseScore * 1.2).round(); // 20% 보너스
     } else if (timeSpent >= 120) {
-      baseScore = (baseScore * 0.8).round(); // 20% 페널티
+      return (baseScore * 0.8).round(); // 20% 페널티
     }
-
-    return baseScore;
+    return baseScore; // 기본 점수
   }
 
   /// 세션 요약 생성

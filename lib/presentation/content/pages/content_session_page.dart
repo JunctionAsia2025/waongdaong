@@ -389,83 +389,143 @@ class _ContentSessionPageState extends State<ContentSessionPage> {
     }
   }
 
-  void _completeAllQuizzes() {
-    // AI 채점 및 결과 계산
-    final results = _calculateResults();
+  Future<void> _completeAllQuizzes() async {
+    // AI 채점 수행
+    setState(() {
+      _isLoading = true;
+    });
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (context) => QuizResultPage(
-              quizzes: _quizzes,
-              userAnswers: _userAnswers,
-              results: results,
-              content: widget.content,
-            ),
-      ),
-    );
+    try {
+      final quizService = QuizModule.instance.quizService;
+      final aiResults = <String, dynamic>{};
+      int totalScore = 0;
+
+      // 각 퀴즈에 대해 AI 평가 수행
+      for (int i = 0; i < _quizzes.length; i++) {
+        final quiz = _quizzes[i];
+        final userAnswer = _userAnswers[i] ?? '';
+
+        if (userAnswer.trim().isNotEmpty) {
+          // AI 평가 수행
+          final result = await quizService.submitQuizAnswer(
+            quizId: quiz.id,
+            userId: 'current-user-id', // 실제 사용자 ID로 교체 필요
+            userAnswer: userAnswer,
+            timeSpent: 60, // 임시로 60초로 설정 (실제로는 측정 필요)
+          );
+
+          if (result.isSuccess) {
+            final attempt = result.dataOrNull!;
+            aiResults['quiz_$i'] = {
+              'isCorrect': attempt.isCorrect,
+              'score': attempt.score,
+              'maxScore': quiz.points,
+              'userAnswer': userAnswer,
+              'correctAnswer': quiz.correctAnswer,
+              'aiFeedback': attempt.aiEvaluation,
+            };
+            totalScore += attempt.score;
+          } else {
+            // AI 평가 실패 시 기본 점수
+            aiResults['quiz_$i'] = {
+              'isCorrect': true,
+              'score': quiz.points,
+              'maxScore': quiz.points,
+              'userAnswer': userAnswer,
+              'correctAnswer': quiz.correctAnswer,
+              'aiFeedback': 'AI 평가를 수행할 수 없어 기본 점수를 부여했습니다.',
+            };
+            totalScore += quiz.points;
+          }
+        } else {
+          // 답안이 없는 경우 0점
+          aiResults['quiz_$i'] = {
+            'isCorrect': false,
+            'score': 0,
+            'maxScore': quiz.points,
+            'userAnswer': '',
+            'correctAnswer': quiz.correctAnswer,
+            'aiFeedback': '답안을 작성하지 않았습니다.',
+          };
+        }
+      }
+
+      // 최대 가능 점수 계산
+      int maxPossibleScore = 0;
+      for (final quiz in _quizzes) {
+        maxPossibleScore += quiz.points;
+      }
+
+      aiResults['totalScore'] = totalScore;
+      aiResults['totalQuizzes'] = _quizzes.length;
+      aiResults['maxPossibleScore'] = maxPossibleScore;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      // AI 채점 완료 후 결과 페이지로 이동
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (context) => QuizResultPage(
+                quizzes: _quizzes,
+                userAnswers: _userAnswers,
+                results: aiResults,
+                content: widget.content,
+              ),
+        ),
+      );
+    } catch (e) {
+      print('AI 채점 중 오류 발생: $e');
+      setState(() {
+        _isLoading = false;
+      });
+
+      // 오류 발생 시 기본 결과로 이동
+      final results = _calculateResults();
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (context) => QuizResultPage(
+                quizzes: _quizzes,
+                userAnswers: _userAnswers,
+                results: results,
+                content: widget.content,
+              ),
+        ),
+      );
+    }
   }
 
-  void _completeQuiz() {
-    // AI 채점 및 결과 계산 (임시 구현)
-    final results = _calculateResults();
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (context) => QuizResultPage(
-              quizzes: _quizzes,
-              userAnswers: _userAnswers,
-              results: results,
-              content: widget.content,
-            ),
-      ),
-    );
+  Future<void> _completeQuiz() async {
+    // AI 채점 수행
+    await _completeAllQuizzes();
   }
 
   Map<String, dynamic> _calculateResults() {
-    int correctAnswers = 0;
     int totalScore = 0;
     int maxPossibleScore = 0;
 
     for (int i = 0; i < _quizzes.length; i++) {
       final quiz = _quizzes[i];
-      final userAnswer = _userAnswers[i] ?? '';
       maxPossibleScore += quiz.points;
 
-      // 임시 채점 로직 (실제로는 AI 채점 사용)
-      final isCorrect = _evaluateAnswer(quiz, userAnswer);
-      if (isCorrect) {
-        correctAnswers++;
-        totalScore += quiz.points;
-      }
+      // AI 채점 결과를 사용하므로 임시 채점 로직 제거
+      // 실제 점수는 AI 평가 후에 계산됨
     }
-
-    final accuracyRate =
-        _quizzes.isEmpty ? 0.0 : (correctAnswers / _quizzes.length) * 100;
 
     return {
       'totalQuizzes': _quizzes.length,
-      'correctAnswers': correctAnswers,
-      'accuracyRate': accuracyRate,
       'totalScore': totalScore,
       'maxPossibleScore': maxPossibleScore,
     };
   }
 
-  bool _evaluateAnswer(Quiz quiz, String userAnswer) {
-    if (userAnswer.trim().isEmpty) return false;
-
-    if (quiz.quizType == QuizType.vocabulary) {
-      return userAnswer.trim().toLowerCase() ==
-          quiz.correctAnswer.trim().toLowerCase();
-    }
-
-    // 번역/요약의 경우 임시로 길이 기반 평가 (실제로는 AI 평가 사용)
-    return userAnswer.trim().length >= 10;
-  }
+  // AI 채점을 사용하므로 임시 채점 로직 제거
+  // _evaluateAnswer 메서드와 _getBasicSynonyms 메서드 삭제
 
   @override
   Widget build(BuildContext context) {
