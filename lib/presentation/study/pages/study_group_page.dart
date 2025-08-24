@@ -122,27 +122,31 @@ class _StudyGroupPageState extends State<StudyGroupPage> {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Discussing "Atomic Habits"', style: AppTextStyles.h4),
-              SizedBox(height: 4),
-              Text('Source: James Clear', style: AppTextStyles.bodyMedium),
-            ],
+          Expanded(
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Discussing "Atomic Habits"', style: AppTextStyles.h4),
+                SizedBox(height: 4),
+                Text('Source: James Clear', style: AppTextStyles.bodyMedium),
+              ],
+            ),
           ),
+          const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(
                     Icons.access_time_filled,
                     size: 16,
                     color: AppColors.textSecondary,
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 4),
                   Text(
                     'PM 3:00',
                     style: AppTextStyles.labelLarge.copyWith(
@@ -153,13 +157,14 @@ class _StudyGroupPageState extends State<StudyGroupPage> {
               ),
               const SizedBox(height: 8),
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(
                     Icons.person,
                     size: 16,
                     color: AppColors.textSecondary,
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 4),
                   Text(
                     '4',
                     style: AppTextStyles.labelLarge.copyWith(
@@ -213,7 +218,7 @@ class _StudyGroupPageState extends State<StudyGroupPage> {
   Widget _buildRecommendationCard(Map<String, dynamic> studyData) {
     return Container(
       height: 140.0,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: studyData['color'] as Color,
         borderRadius: BorderRadius.circular(20),
@@ -234,9 +239,12 @@ class _StudyGroupPageState extends State<StudyGroupPage> {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 0),
           Text(
             studyData['source'] as String,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
             style: AppTextStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -249,10 +257,10 @@ class _StudyGroupPageState extends State<StudyGroupPage> {
                 children: [
                   const Icon(
                     Icons.person_outline,
-                    size: 16,
+                    size: 10,
                     color: AppColors.textSecondary,
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 1),
                   Text(
                     '${studyData['participants']}/${studyData['maxParticipants']}',
                     style: AppTextStyles.labelLarge,
@@ -265,19 +273,19 @@ class _StudyGroupPageState extends State<StudyGroupPage> {
                   backgroundColor: Colors.black,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+                    horizontal: 6,
+                    vertical: 3,
                   ),
                 ),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('Participate'),
-                    SizedBox(width: 4),
-                    Icon(Icons.arrow_forward, size: 16),
+                    Text('Join'),
+                    SizedBox(width: 1),
+                    Icon(Icons.arrow_forward, size: 10),
                   ],
                 ),
               ),

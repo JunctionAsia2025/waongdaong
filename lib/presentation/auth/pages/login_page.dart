@@ -32,7 +32,9 @@ class _LoginPageState extends State<LoginPage> {
       if (email == 'test@test.com' && password == 'password') {
         // 로그인 성공 시 다음 페이지로 이동
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const InterestSelectionPage()),
+          MaterialPageRoute(
+            builder: (context) => const InterestSelectionPage(),
+          ),
         );
       } else {
         // 로그인 실패 시 간단한 스낵바 메시지 표시
@@ -53,18 +55,15 @@ class _LoginPageState extends State<LoginPage> {
       body: SafeArea(
         child: SingleChildScrollView(
           // 페이지 전체에 일관된 수평 패딩을 적용하여 폭을 조정
-          padding: const EdgeInsets.symmetric(horizontal: 50),
+          padding: const EdgeInsets.symmetric(horizontal: 40),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 50),
-              Image.asset(
-                'assets/images/title_LOGO.png',
-                width: 220,
-              ),
-              const SizedBox(height: 35),
+              const SizedBox(height: 25),
+              Image.asset('assets/images/title_LOGO.png', width: 170),
+              const SizedBox(height: 20),
               _buildThoughtBubbles(),
-              const SizedBox(height: 35),
+              const SizedBox(height: 20),
               _buildBottomSection(),
             ],
           ),
@@ -77,19 +76,19 @@ class _LoginPageState extends State<LoginPage> {
     return Column(
       children: [
         Container(
-          width: 210,
-          height: 210,
+          width: 150,
+          height: 150,
           decoration: const BoxDecoration(
             color: AppColors.YBMPurple,
             shape: BoxShape.circle,
           ),
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(15),
           child: const Center(
             child: Text(
               "Start your journey of\n'English for life,'\nnot 'English for exams'",
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 13,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textPrimary,
                 height: 1.4,
@@ -97,16 +96,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
-        const SizedBox(height: 18),
-        Container(
-          width: 60,
-          height: 60,
-          decoration: const BoxDecoration(
-            color: AppColors.YBMPurple,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 10),
         Container(
           width: 40,
           height: 40,
@@ -125,38 +115,38 @@ class _LoginPageState extends State<LoginPage> {
       children: [
         // 배경이 되는 거대한 원의 상단 부분
         Container(
-          margin: const EdgeInsets.only(top: 60),
-          height: 300,
+          margin: const EdgeInsets.only(top: 30),
+          height: 220,
           decoration: const BoxDecoration(
             color: AppColors.YBMPurple,
             // 매우 큰 반지름을 주어 곡선을 완만하게 만듦
             borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(400),
-              topRight: Radius.circular(400),
+              topLeft: Radius.circular(250),
+              topRight: Radius.circular(250),
             ),
           ),
         ),
         // 로그인 폼
-        _buildSignUpForm(),
+        _buildSignInForm(),
       ],
     );
   }
 
-  Widget _buildSignUpForm() {
+  Widget _buildSignInForm() {
     return Form(
       key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Sign Up',
+            'Sign In',
             style: TextStyle(
-              fontSize: 24,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
           TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
@@ -168,7 +158,7 @@ class _LoginPageState extends State<LoginPage> {
               return null;
             },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           TextFormField(
             controller: _passwordController,
             obscureText: !_isPasswordVisible,
@@ -192,23 +182,23 @@ class _LoginPageState extends State<LoginPage> {
               return null;
             },
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 15),
           // 로그인 버튼 추가
           SizedBox(
             width: double.infinity,
-            height: 52,
+            height: 42,
             child: ElevatedButton(
               onPressed: _handleLogin,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.YBMdarkPurple,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
               child: const Text(
                 'Login',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
               ),
             ),
           ),
@@ -224,13 +214,13 @@ class _LoginPageState extends State<LoginPage> {
       filled: true,
       // fillColor를 연한 회색으로 수정
       fillColor: AppColors.grey50,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(10),
         borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: AppColors.primary, width: 2),
       ),
     );
