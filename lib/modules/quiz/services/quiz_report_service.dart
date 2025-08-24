@@ -49,12 +49,12 @@ class QuizReportService {
       // 4. 리포트 제목 생성
       final reportTitle = _generateReportTitle(quizAnalysis, contentTitle);
 
-      // 5. Report 객체 생성
+      // 5. Report 객체 생성 (실제 사용자 ID 사용)
       final report = Report(
         id: _uuid.v4(),
-        userId: userId,
+        userId: userId, // 실제 사용자 ID 사용
         reportType: ReportType.individualLearning,
-        learningSessionId: learningSessionId,
+        learningSessionId: null, // learning_sessions 테이블 의존성 제거
         studyGroupId: null,
         title: reportTitle,
         content: reportContent,
@@ -184,7 +184,7 @@ ${_formatAIEvaluationDetails(attempts)}
 
     return await _aiService.sendPrompt(
       prompt: prompt,
-      maxTokens: 500,
+      maxTokens: 2000, // 토큰 수 증가
       temperature: 0.7,
     );
   }

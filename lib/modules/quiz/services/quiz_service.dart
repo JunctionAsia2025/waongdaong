@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:math' as math;
+import 'package:uuid/uuid.dart';
 import '../models/quiz.dart';
 import '../models/quiz_attempt.dart';
 import '../../supabase/services/database_service.dart';
@@ -11,6 +13,10 @@ class QuizService {
   final DatabaseService _databaseService;
   final AIApiService _aiService;
   late final QuizReportService _reportService;
+  final Uuid _uuid = const Uuid();
+
+  /// QuizReportService 가져오기
+  QuizReportService get reportService => _reportService;
 
   QuizService({
     required DatabaseService databaseService,
@@ -149,17 +155,45 @@ $contentText
 응답은 순수 JSON 배열만 제공해주세요.
 ''';
 
-      final response = await _aiService.sendPrompt(prompt: prompt);
+      print('🤖 [단어퀴즈] AI 프롬프트 전송...');
+      print('📝 콘텐츠 길이: ${contentText.length}자');
+
+      final response = await _aiService.sendPrompt(
+        prompt: prompt,
+        maxTokens: 2000, // 퀴즈 3개 완전 생성을 위한 충분한 토큰 수
+      );
+      print('📡 AI 응답 상태: ${response.isSuccess}');
+
       if (response.isFailure) {
+        print('❌ AI 응답 실패: ${response.errorMessageOrNull}');
+
+        // API 할당량 초과 시는 에러로 처리 (샘플 퀴즈는 ContentSessionPage에서 처리)
         return Result.failure('AI 응답 오류: ${response.errorMessageOrNull}');
       }
 
-      final quizData = _parseAIResponse(response.dataOrNull ?? '');
+      final rawResponse = response.dataOrNull ?? '';
+      print('📄 [단어퀴즈] AI 원본 응답:');
+      print('=== 응답 시작 ===');
+      print(rawResponse);
+      print('=== 응답 끝 ===');
+      print('응답 길이: ${rawResponse.length}자');
+
+      try {
+        final quizData = _parseAIResponse(rawResponse);
+        print('✅ [단어퀴즈] 파싱 성공! ${quizData.length}개 퀴즈 데이터 추출');
+      } catch (parseError) {
+        print('❌ [단어퀴즈] 파싱 실패: $parseError');
+        print('🔧 파싱 시도한 응답:');
+        print(rawResponse);
+        return Result.failure('단어퀴즈 AI 응답 파싱 실패: $parseError');
+      }
+
+      final quizData = _parseAIResponse(rawResponse);
       final List<Quiz> quizzes = [];
 
       for (final data in quizData) {
         final quiz = Quiz(
-          id: '', // DB에서 생성됨
+          id: _uuid.v4(),
           contentId: contentId,
           quizType: QuizType.vocabulary,
           question: data['question'] as String,
@@ -188,23 +222,26 @@ $contentText
   }) async {
     try {
       final prompt = '''
-다음 영어 텍스트에서 $count개의 요약 퀴즈를 생성해주세요.
+다음 영어 텍스트 전체에 대한 1개의 요약 퀴즈를 생성해주세요.
 난이도: $difficultyLevel
 
-각 퀴즈는 다음 형식이어야 합니다:
+퀴즈 형식:
 {
-  "excerpt": "텍스트에서 발췌한 문단 (2-3문장)",
-  "question": "Summarize the following passage in English:",
-  "correct_answer": "모범 요약 답안"
+  "excerpt": "전체 텍스트 내용 (원문 그대로)",
+  "question": "Summarize the entire article in 3-4 sentences in English. Your summary should capture the main points and key information.",
+  "correct_answer": "전체 내용을 포괄하는 3-4문장의 모범 요약 답안"
 }
 
 텍스트:
 $contentText
 
-응답은 순수 JSON 배열만 제공해주세요.
+응답은 순수 JSON 배열 형태로 1개 객체만 제공해주세요.
 ''';
 
-      final response = await _aiService.sendPrompt(prompt: prompt);
+      final response = await _aiService.sendPrompt(
+        prompt: prompt,
+        maxTokens: 2000, // 퀴즈 완전 생성을 위한 충분한 토큰 수
+      );
       if (response.isFailure) {
         return Result.failure('AI 응답 오류: ${response.errorMessageOrNull}');
       }
@@ -214,7 +251,7 @@ $contentText
 
       for (final data in quizData) {
         final quiz = Quiz(
-          id: '',
+          id: _uuid.v4(),
           contentId: contentId,
           quizType: QuizType.summary,
           question: data['question'] as String,
@@ -259,7 +296,10 @@ $contentText
 응답은 순수 JSON 배열만 제공해주세요.
 ''';
 
-      final response = await _aiService.sendPrompt(prompt: prompt);
+      final response = await _aiService.sendPrompt(
+        prompt: prompt,
+        maxTokens: 2000, // 퀴즈 완전 생성을 위한 충분한 토큰 수
+      );
       if (response.isFailure) {
         return Result.failure('AI 응답 오류: ${response.errorMessageOrNull}');
       }
@@ -269,7 +309,7 @@ $contentText
 
       for (final data in quizData) {
         final quiz = Quiz(
-          id: '',
+          id: _uuid.v4(),
           contentId: contentId,
           quizType: QuizType.translation,
           question: data['question'] as String,
@@ -451,19 +491,90 @@ ${quiz.excerpt != null ? '원문: ${quiz.excerpt}' : ''}
   /// AI 응답 파싱
   List<Map<String, dynamic>> _parseAIResponse(String response) {
     try {
-      // JSON 배열 추출
-      final jsonStart = response.indexOf('[');
-      final jsonEnd = response.lastIndexOf(']') + 1;
+      print('🔍 파싱 시작...');
+      print('원본 응답 길이: ${response.length}');
 
-      if (jsonStart == -1 || jsonEnd == 0) {
-        throw Exception('올바른 JSON 형식이 아닙니다');
+      // 1. 코드 블록 제거 (```json ... ```)
+      String cleanedResponse = response;
+
+      // ```json 블록 제거
+      if (response.contains('```json')) {
+        cleanedResponse =
+            response.replaceAll('```json', '').replaceAll('```', '').trim();
+        print('✅ ```json 코드 블록 제거 완료');
+      }
+      // 일반 ``` 블록 제거
+      else if (response.contains('```')) {
+        cleanedResponse = response.replaceAll('```', '').trim();
+        print('✅ ``` 코드 블록 제거 완료');
       }
 
-      final jsonString = response.substring(jsonStart, jsonEnd);
+      // 추가 정리: 앞뒤 공백 및 특수문자 제거
+      cleanedResponse = cleanedResponse.trim();
+      if (cleanedResponse.startsWith('json')) {
+        cleanedResponse = cleanedResponse.substring(4).trim();
+      }
+
+      print('정리된 응답 길이: ${cleanedResponse.length}');
+
+      // 2. JSON 배열 찾기
+      final jsonStart = cleanedResponse.indexOf('[');
+      final jsonEnd = cleanedResponse.lastIndexOf(']') + 1;
+
+      print('JSON 시작 위치: $jsonStart');
+      print('JSON 끝 위치: $jsonEnd');
+
+      if (jsonStart == -1 || jsonEnd == 0) {
+        print('❌ JSON 배열을 찾을 수 없습니다');
+
+        // 3. JSON 객체들이 개별적으로 있는지 확인
+        final objects = <Map<String, dynamic>>[];
+        final lines = cleanedResponse.split('\n');
+
+        for (final line in lines) {
+          final trimmed = line.trim();
+          if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+            try {
+              final obj = jsonDecode(trimmed) as Map<String, dynamic>;
+              objects.add(obj);
+              print('✅ 개별 JSON 객체 파싱 성공');
+            } catch (e) {
+              print('⚠️ JSON 객체 파싱 실패: $e');
+            }
+          }
+        }
+
+        if (objects.isNotEmpty) {
+          print('✅ 개별 객체 파싱으로 ${objects.length}개 발견');
+          return objects;
+        }
+
+        throw Exception(
+          'JSON 형식을 찾을 수 없습니다. 응답: ${cleanedResponse.substring(0, math.min(200, cleanedResponse.length))}...',
+        );
+      }
+
+      String jsonString = cleanedResponse.substring(jsonStart, jsonEnd);
+      print('추출된 JSON 길이: ${jsonString.length}자');
+
+      // JSON이 불완전한 경우 수정 시도
+      if (!jsonString.endsWith(']')) {
+        print('⚠️ JSON이 불완전함. 수정 시도...');
+
+        // 마지막 완전한 객체를 찾아서 배열을 닫기
+        final lastCompleteObject = jsonString.lastIndexOf('}');
+        if (lastCompleteObject != -1) {
+          jsonString = jsonString.substring(0, lastCompleteObject + 1) + '\n]';
+          print('✅ JSON 수정 완료');
+        }
+      }
+
       final List<dynamic> parsed = (jsonDecode(jsonString) as List);
+      print('✅ JSON 배열 파싱 성공: ${parsed.length}개 항목');
 
       return parsed.map((e) => e as Map<String, dynamic>).toList();
     } catch (e) {
+      print('💥 파싱 최종 실패: $e');
       throw Exception('AI 응답 파싱 실패: $e');
     }
   }
@@ -648,7 +759,7 @@ JSON 형태로 다음 정보를 제공해주세요:
 
   /// ID 생성
   String _generateId() {
-    return DateTime.now().millisecondsSinceEpoch.toString();
+    return _uuid.v4();
   }
 
   /// 퀴즈를 데이터베이스에 저장

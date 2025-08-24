@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 import '../models/quiz.dart';
 import '../models/quiz_attempt.dart';
 import '../services/quiz_service.dart';
@@ -7,6 +8,7 @@ import '../../report/models/report.dart';
 /// 퀴즈 상태 관리 컨트롤러
 class QuizController extends ChangeNotifier {
   final QuizService _quizService;
+  final Uuid _uuid = const Uuid();
 
   // 퀴즈 관련 상태
   List<Quiz> _quizzes = [];
@@ -119,7 +121,7 @@ class QuizController extends ChangeNotifier {
     if (_currentQuiz == null) return;
 
     final attempt = QuizAttempt(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: _uuid.v4(),
       quizId: _currentQuiz!.id,
       userId: 'current-user-id', // 실제 사용자 ID로 교체 필요
       userAnswer: answer,
@@ -177,7 +179,7 @@ class QuizController extends ChangeNotifier {
     final averageScore = totalScore / completedQuizzes;
 
     return ContentQuizProgress(
-      id: 'temp-progress-id',
+      id: _uuid.v4(),
       userId: 'current-user-id',
       contentId: _quizzes.first.contentId,
       totalQuizzes: totalQuizzes,

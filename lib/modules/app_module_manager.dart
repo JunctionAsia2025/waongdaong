@@ -10,6 +10,7 @@ import 'point/point_module.dart';
 import 'ai/ai_module.dart';
 import 'ai_topic/ai_topic_module.dart';
 import 'ai_trans/ai_trans_module.dart';
+import 'quiz/quiz_module.dart';
 
 /// 앱 전체 모듈을 관리하는 매니저
 class AppModuleManager {
@@ -96,6 +97,9 @@ class AppModuleManager {
 
       // AI Trans 모듈 초기화 (AI 모듈 의존)
       AiTransModule.instance.initialize(_aiModule.aiApiService);
+
+      // Quiz 모듈 초기화 (AI 모듈 의존)
+      await QuizModule.instance.initialize();
 
       // 각 모듈 초기화
       await Future.wait([
