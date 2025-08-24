@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'route_names.dart';
 
 // TODO: 각 페이지들이 구현되면 import 추가 예정
-// import '../../presentation/auth/pages/login_page.dart';
+import '../../presentation/auth/pages/login_page.dart';
 // import '../../presentation/main/pages/main_tab_page.dart';
 // 등등...
 
@@ -10,12 +10,8 @@ class AppRouter {
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case RouteNames.login:
-        // TODO: LoginPage 구현 후 연결
         return MaterialPageRoute(
-          builder:
-              (_) => const Scaffold(
-                body: Center(child: Text('Login Page - TODO')),
-              ),
+          builder: (_) => const LoginPage(),
           settings: settings,
         );
 
