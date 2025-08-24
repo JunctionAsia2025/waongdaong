@@ -6,8 +6,13 @@ import '../pages/content_detail_page.dart';
 
 class ContentCard extends StatefulWidget {
   final Content content;
+  final int index; // 카드 인덱스 추가
 
-  const ContentCard({super.key, required this.content});
+  const ContentCard({
+    super.key,
+    required this.content,
+    required this.index, // 인덱스 필수 파라미터로 추가
+  });
 
   @override
   State<ContentCard> createState() => _ContentCardState();
@@ -70,16 +75,14 @@ class _ContentCardState extends State<ContentCard>
   }
 
   Color _getCardColor() {
-    switch (widget.content.contentType) {
-      case 'blog':
-        return AppColors.YBMdarkPurple;
-      case 'column':
-        return AppColors.YBMBlue;
-      case 'news':
-        return AppColors.YBMPink;
-      default:
-        return AppColors.YBMdarkPurple;
-    }
+    // 카드 순서대로 번갈아가면서 색상 적용
+    final colors = [
+      AppColors.YBMdarkPurple,
+      AppColors.YBMBlue,
+      AppColors.YBMPink,
+    ];
+
+    return colors[widget.index % colors.length];
   }
 
   @override

@@ -245,9 +245,6 @@ class _StudyGroupPageState extends State<StudyGroupPage> {
             style: AppTextStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-            ),
           ),
           const Spacer(),
           Row(

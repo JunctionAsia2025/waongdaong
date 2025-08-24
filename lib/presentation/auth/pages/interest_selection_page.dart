@@ -419,3 +419,4 @@ class _InterestSelectionPageState extends State<InterestSelectionPage> {
     );
   }
 }
+

@@ -170,9 +170,21 @@ class _ContentFeedPageState extends State<ContentFeedPage>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _buildRoundedBox(),
-                  _buildRoundedBox(),
-                  _buildRoundedBox(),
+                  _buildRoundedBox(
+                    userName: 'Tech Review',
+                    description:
+                        'Latest AI trends and innovative tech developments shaping the future',
+                  ),
+                  _buildRoundedBox(
+                    userName: 'Elon Musk',
+                    description:
+                        'Tesla and SpaceX breakthrough innovations and future vision insights',
+                  ),
+                  _buildRoundedBox(
+                    userName: 'BBC News',
+                    description:
+                        'Breaking global news on economy, politics, and cutting-edge technology',
+                  ),
                 ],
               ),
             ),
@@ -257,6 +269,7 @@ class _ContentFeedPageState extends State<ContentFeedPage>
                                           ),
                                           child: ContentCard(
                                             content: _contents[index],
+                                            index: index, // 인덱스 전달
                                           ),
                                         );
                                       },
@@ -338,7 +351,7 @@ class _ContentFeedPageState extends State<ContentFeedPage>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Hi, 사용자!',
+                          'Hi, Waong!',
                           style: AppTextStyles.h2.copyWith(
                             color: Colors.black,
                             fontWeight: FontWeight.w900, // 아주 굵은 볼드
@@ -364,7 +377,10 @@ class _ContentFeedPageState extends State<ContentFeedPage>
     );
   }
 
-  Widget _buildRoundedBox() {
+  Widget _buildRoundedBox({
+    required String userName,
+    required String description,
+  }) {
     return Container(
       width: 110,
       height: 80,
@@ -397,7 +413,7 @@ class _ContentFeedPageState extends State<ContentFeedPage>
                 // 이름
                 Expanded(
                   child: Text(
-                    '사용자 이름',
+                    userName,
                     style: AppTextStyles.bodySmall.copyWith(
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
@@ -411,7 +427,7 @@ class _ContentFeedPageState extends State<ContentFeedPage>
             const SizedBox(height: 4),
             // 2줄 텍스트
             Text(
-              '여기에 간단한 설명 텍스트가 들어갑니다. 길어지면 말줄임표로 표시됩니다.',
+              description,
               style: AppTextStyles.bodySmall.copyWith(
                 color: AppColors.textSecondary,
                 fontSize: 10,

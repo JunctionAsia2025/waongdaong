@@ -12,6 +12,7 @@ import '../../../modules/supabase/supabase_module.dart';
 import '../../../modules/ai/ai_module.dart';
 import '../../../modules/app_module_manager.dart';
 import '../../shared/widgets/loading_indicator.dart';
+import '../pages/content_feed_page.dart';
 
 class ContentReportPage extends StatefulWidget {
   final Content content;
@@ -51,14 +52,24 @@ class _ContentReportPageState extends State<ContentReportPage> {
     try {
       print('🔥 리포트 생성 시작');
 
-      // 틀린 문제들 찾기
+      // 전달받은 점수 데이터 사용
+      print('📊 전달받은 결과 데이터: ${widget.results}');
+
+      // 틀린 문제들 찾기 (전달받은 데이터 사용)
       final incorrectQuizzes = <Quiz>[];
       final incorrectAnswers = <String>[];
 
       for (int i = 0; i < widget.quizzes.length; i++) {
         final quiz = widget.quizzes[i];
         final userAnswer = widget.userAnswers[i] ?? '';
-        final isCorrect = _evaluateAnswer(quiz, userAnswer);
+
+        // 전달받은 결과 데이터에서 정확성 확인
+        final quizResult = widget.results['quiz_$i'] as Map<String, dynamic>?;
+        final isCorrect = quizResult?['isCorrect'] as bool? ?? false;
+
+        print(
+          '📝 퀴즈 $i - 사용자 답안: "$userAnswer", 정답: "${quiz.correctAnswer}", 정확성: $isCorrect',
+        );
 
         if (!isCorrect && userAnswer.isNotEmpty) {
           incorrectQuizzes.add(quiz);
@@ -101,12 +112,18 @@ class _ContentReportPageState extends State<ContentReportPage> {
       // QuizModule의 QuizReportService 사용
       final reportService = QuizModule.instance.quizService.reportService;
 
-      // QuizAttempt 객체들 생성
+      // QuizAttempt 객체들 생성 (전달받은 데이터 사용)
       final attempts = <QuizAttempt>[];
       for (int i = 0; i < widget.quizzes.length; i++) {
         final quiz = widget.quizzes[i];
         final userAnswer = widget.userAnswers[i] ?? '';
-        final isCorrect = _evaluateAnswer(quiz, userAnswer);
+
+        // 전달받은 결과 데이터에서 점수 정보 가져오기
+        final quizResult = widget.results['quiz_$i'] as Map<String, dynamic>?;
+        final isCorrect = quizResult?['isCorrect'] as bool? ?? false;
+        final score = quizResult?['score'] as int? ?? 0;
+
+        print('📊 퀴즈 $i - 점수: $score/${quiz.points}, 정확성: $isCorrect');
 
         attempts.add(
           QuizAttempt(
@@ -115,7 +132,7 @@ class _ContentReportPageState extends State<ContentReportPage> {
             userId: actualUserId, // 실제 존재하는 사용자 ID
             userAnswer: userAnswer,
             isCorrect: isCorrect,
-            score: isCorrect ? quiz.points : 0,
+            score: score, // 전달받은 점수 사용
             timeSpent: 30, // 임시 값
             createdAt: DateTime.now(),
           ),
@@ -267,6 +284,38 @@ class _ContentReportPageState extends State<ContentReportPage> {
           _buildAIFeedbackCard(),
           const SizedBox(height: 16),
           _buildQuizDetailsCard(),
+          const SizedBox(height: 32),
+          // Return 버튼
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: () {
+                // 모든 페이지를 pop하고 ContentFeedPage로 이동
+                Navigator.of(context).popUntil((route) => route.isFirst);
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (context) => const ContentFeedPage(),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(28),
+                ),
+                elevation: 2,
+              ),
+              child: Text(
+                'Return',
+                style: AppTextStyles.bodyLarge.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -421,10 +470,25 @@ ${_report!.aiFeedback}
   }
 
   Widget _buildQuizDetailsCard() {
-    final totalScore = widget.results['totalScore'] ?? 0;
-    final maxScore = widget.results['maxPossibleScore'] ?? 0;
-    final accuracy = widget.results['accuracy'] ?? 0.0;
-    final correctAnswers = widget.results['correctAnswers'] ?? 0;
+    // 전달받은 점수 데이터 사용
+    final totalScore = widget.results['totalScore'] as int? ?? 0;
+    final correctAnswers = widget.results['correctAnswers'] as int? ?? 0;
+    final totalQuizzes =
+        widget.results['totalQuizzes'] as int? ?? widget.quizzes.length;
+
+    // 최대 점수 계산
+    int maxScore = 0;
+    for (final quiz in widget.quizzes) {
+      maxScore += quiz.points;
+    }
+
+    // 정답률 계산
+    final accuracy =
+        totalQuizzes > 0 ? (correctAnswers / totalQuizzes) * 100 : 0.0;
+
+    print(
+      '📊 Report 점수 데이터 - 총점: $totalScore, 정답: $correctAnswers, 전체: $totalQuizzes, 정답률: ${accuracy.toStringAsFixed(1)}%',
+    );
 
     return _buildCard(
       title: '📋 퀴즈 결과 상세',

@@ -107,59 +107,28 @@ class QuizResultPage extends StatelessWidget {
 
             const SizedBox(height: 32),
 
-            // 버튼들
-            Row(
-              children: [
-                // Generate Report 버튼
-                Expanded(
-                  child: SizedBox(
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: () => _generateReport(context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.YBMPurple,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(28),
-                        ),
-                        elevation: 2,
-                      ),
-                      child: Text(
-                        'Generate Report',
-                        style: AppTextStyles.bodyLarge.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
+            // Generate Report 버튼
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: () => _generateReport(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  elevation: 2,
+                ),
+                child: Text(
+                  'Generate Report',
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
                 ),
-                const SizedBox(width: 16),
-                // 완료 버튼
-                Expanded(
-                  child: SizedBox(
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.YBMBlue,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(28),
-                        ),
-                        elevation: 2,
-                      ),
-                      child: Text(
-                        '완료',
-                        style: AppTextStyles.bodyLarge.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ],
         ),
@@ -168,6 +137,35 @@ class QuizResultPage extends StatelessWidget {
   }
 
   void _generateReport(BuildContext context) async {
+    // 실제 퀴즈 점수 데이터 계산
+    final calculatedResults = <String, dynamic>{};
+    int totalScore = 0;
+    int correctAnswers = 0;
+
+    for (int i = 0; i < quizzes.length; i++) {
+      final quiz = quizzes[i];
+      final userAnswer = userAnswers[i] ?? '';
+      final isCorrect = _evaluateAnswer(quiz, userAnswer);
+      final score = isCorrect ? quiz.points : 0;
+
+      if (isCorrect) {
+        totalScore += score;
+        correctAnswers++;
+      }
+
+      calculatedResults['quiz_$i'] = {
+        'isCorrect': isCorrect,
+        'score': score,
+        'maxScore': quiz.points,
+        'userAnswer': userAnswer,
+        'correctAnswer': quiz.correctAnswer,
+      };
+    }
+
+    calculatedResults['totalScore'] = totalScore;
+    calculatedResults['correctAnswers'] = correctAnswers;
+    calculatedResults['totalQuizzes'] = quizzes.length;
+
     // Content Report 페이지로 이동
     Navigator.push(
       context,
@@ -177,7 +175,7 @@ class QuizResultPage extends StatelessWidget {
               content: content,
               quizzes: quizzes,
               userAnswers: userAnswers,
-              results: results,
+              results: calculatedResults, // 실제 계산된 결과 전달
             ),
       ),
     );
@@ -426,12 +424,81 @@ class QuizResultPage extends StatelessWidget {
   bool _evaluateAnswer(Quiz quiz, String userAnswer) {
     if (userAnswer.trim().isEmpty) return false;
 
-    if (quiz.quizType == QuizType.vocabulary) {
-      return userAnswer.trim().toLowerCase() ==
-          quiz.correctAnswer.trim().toLowerCase();
-    }
+    print('🔍 채점 시작 - 퀴즈 타입: ${quiz.quizType}');
+    print('📝 사용자 답안: "$userAnswer"');
+    print('✅ 정답: "${quiz.correctAnswer}"');
 
-    // 번역/요약의 경우 임시로 길이 기반 평가 (실제로는 AI 평가 사용)
-    return userAnswer.trim().length >= 10;
+    switch (quiz.quizType) {
+      case QuizType.vocabulary:
+        // 단어 퀴즈: 정확한 단어 매칭
+        final userWord = userAnswer.trim().toLowerCase();
+        final correctWord = quiz.correctAnswer.trim().toLowerCase();
+        final isCorrect = userWord == correctWord;
+        print(
+          '📚 단어 퀴즈 - 사용자: "$userWord", 정답: "$correctWord", 결과: $isCorrect',
+        );
+        return isCorrect;
+
+      case QuizType.translation:
+        // 번역 퀴즈: 키워드 기반 평가
+        final userText = userAnswer.trim().toLowerCase();
+        final correctText = quiz.correctAnswer.trim().toLowerCase();
+
+        // 키워드 추출 (간단한 방법)
+        final userKeywords = _extractKeywords(userText);
+        final correctKeywords = _extractKeywords(correctText);
+
+        // 키워드 매칭 비율 계산
+        final matchCount =
+            userKeywords
+                .where((keyword) => correctKeywords.contains(keyword))
+                .length;
+        final matchRatio =
+            correctKeywords.isNotEmpty
+                ? matchCount / correctKeywords.length
+                : 0.0;
+
+        final isCorrect =
+            matchRatio >= 0.6 && userText.length >= 5; // 60% 이상 매칭 + 최소 길이
+        print(
+          '🌐 번역 퀴즈 - 매칭 비율: ${(matchRatio * 100).toStringAsFixed(1)}%, 결과: $isCorrect',
+        );
+        return isCorrect;
+
+      case QuizType.summary:
+        // 요약 퀴즈: 내용 기반 평가
+        final userText = userAnswer.trim();
+        final correctText = quiz.correctAnswer.trim();
+
+        // 키워드 기반 평가
+        final userKeywords = _extractKeywords(userText.toLowerCase());
+        final correctKeywords = _extractKeywords(correctText.toLowerCase());
+
+        final matchCount =
+            userKeywords
+                .where((keyword) => correctKeywords.contains(keyword))
+                .length;
+        final matchRatio =
+            correctKeywords.isNotEmpty
+                ? matchCount / correctKeywords.length
+                : 0.0;
+
+        final isCorrect =
+            matchRatio >= 0.5 && userText.length >= 20; // 50% 이상 매칭 + 최소 길이
+        print(
+          '📖 요약 퀴즈 - 매칭 비율: ${(matchRatio * 100).toStringAsFixed(1)}%, 결과: $isCorrect',
+        );
+        return isCorrect;
+    }
+  }
+
+  List<String> _extractKeywords(String text) {
+    // 간단한 키워드 추출 (한글, 영어 단어)
+    final words =
+        text
+            .split(RegExp(r'[^\w가-힣]'))
+            .where((word) => word.length > 1)
+            .toList();
+    return words.take(10).toList(); // 상위 10개 단어만 사용
   }
 }

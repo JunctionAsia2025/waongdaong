@@ -294,15 +294,6 @@ class _ContentSessionPageState extends State<ContentSessionPage> {
     }
   }
 
-  void _previousQuiz() {
-    if (_currentTypeIndex > 0) {
-      setState(() {
-        _currentTypeIndex--;
-        _answerController.text = _userAnswers[_getCurrentGlobalIndex()] ?? '';
-      });
-    }
-  }
-
   void _saveAnswer() {
     _userAnswers[_getCurrentGlobalIndex()] = _answerController.text;
     setState(() {}); // 버튼 상태 업데이트
@@ -901,88 +892,6 @@ class _ContentSessionPageState extends State<ContentSessionPage> {
                 ],
               ),
             ),
-          ),
-
-          // Navigation arrows (left/right)
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              if (_currentTypeIndex > 0)
-                GestureDetector(
-                  onTap: _previousQuiz,
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: AppColors.YBMBlue,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.arrow_back_ios_new,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                )
-              else
-                const SizedBox(width: 48),
-
-              if (_currentTypeIndex < _getCurrentTypeQuizzes().length - 1)
-                GestureDetector(
-                  onTap:
-                      _answerController.text.trim().isEmpty
-                          ? null
-                          : _submitCurrentAnswer,
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color:
-                          _answerController.text.trim().isEmpty
-                              ? Colors.grey.shade300
-                              : AppColors.YBMBlue,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.arrow_forward_ios,
-                      color:
-                          _answerController.text.trim().isEmpty
-                              ? Colors.grey.shade600
-                              : Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                )
-              else
-                GestureDetector(
-                  onTap:
-                      _answerController.text.trim().isEmpty
-                          ? null
-                          : _submitCurrentAnswer,
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color:
-                          _answerController.text.trim().isEmpty
-                              ? Colors.grey.shade300
-                              : (_getSubmitButtonText() == '제출'
-                                  ? AppColors.YBMPink
-                                  : AppColors.YBMBlue),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      _getSubmitButtonText() == '제출' ? Icons.send : Icons.check,
-                      color:
-                          _answerController.text.trim().isEmpty
-                              ? Colors.grey.shade600
-                              : Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                ),
-            ],
           ),
         ],
       ),
