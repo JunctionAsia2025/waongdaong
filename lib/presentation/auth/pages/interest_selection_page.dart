@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../app/theme/colors.dart';
 import '../../../app/theme/text_styles.dart';
-import '../../study/pages/study_group_page.dart';
+import '../../content/pages/content_feed_page.dart'; // Added import for ContentFeedPage
 
 // 상단 배경의 부드러운 곡선을 그리기 위한 CustomClipper
 class TopCurveClipper extends CustomClipper<Path> {
@@ -53,7 +53,14 @@ class _InterestSelectionPageState extends State<InterestSelectionPage> {
 
   // 임시 데이터
   final List<String> _interestOptions = [
-    'Technology', 'Business', 'Science', 'Health', 'Arts & Culture', 'Politics', 'Sports', 'Travel'
+    'Technology',
+    'Business',
+    'Science',
+    'Health',
+    'Arts & Culture',
+    'Politics',
+    'Sports',
+    'Travel',
   ];
   final List<Map<String, String>> _creatorOptions = [
     {'name': 'Elon Musk', 'icon': '🤖'},
@@ -73,10 +80,7 @@ class _InterestSelectionPageState extends State<InterestSelectionPage> {
           // 1. 상단 곡선 배경
           ClipPath(
             clipper: TopCurveClipper(),
-            child: Container(
-              height: 220,
-              color: AppColors.YBMlightPurple,
-            ),
+            child: Container(height: 220, color: AppColors.YBMlightPurple),
           ),
 
           // 2. 메인 콘텐츠 (스크롤 가능)
@@ -138,8 +142,9 @@ class _InterestSelectionPageState extends State<InterestSelectionPage> {
               'assets/images/waong_character.png', // TODO: 캐릭터 이미지 경로 확인 필요
               width: 120,
               // 1. 뜬금없는 사람 아이콘 제거: 에러 발생 시 빈 컨테이너를 보여줌
-              errorBuilder: (context, error, stackTrace) =>
-                  const SizedBox(width: 120, height: 120),
+              errorBuilder:
+                  (context, error, stackTrace) =>
+                      const SizedBox(width: 120, height: 120),
             ),
           ),
         ],
@@ -150,7 +155,8 @@ class _InterestSelectionPageState extends State<InterestSelectionPage> {
   // 2. 시험 성적 입력 칸 기능 구현
   Widget _buildScoreSection() {
     return _buildSectionCard(
-      title: 'Please tell us your current\nTOEIC / TOEIC Speaking / TOEIC Writing scores.',
+      title:
+          'Please tell us your current\nTOEIC / TOEIC Speaking / TOEIC Writing scores.',
       subtitle: '*You can skip this section if you don\'t have them.',
       child: Column(
         children: [
@@ -172,7 +178,9 @@ class _InterestSelectionPageState extends State<InterestSelectionPage> {
                       const Text('Your Score', style: AppTextStyles.labelLarge),
                       Text(
                         '${_scores[_selectedTest!]!.toInt()} / ${_maxScores[_selectedTest!]!.toInt()}',
-                        style: AppTextStyles.labelLarge.copyWith(color: AppColors.primaryDark),
+                        style: AppTextStyles.labelLarge.copyWith(
+                          color: AppColors.primaryDark,
+                        ),
                       ),
                     ],
                   ),
@@ -180,7 +188,8 @@ class _InterestSelectionPageState extends State<InterestSelectionPage> {
                     value: _scores[_selectedTest!]!,
                     min: 0,
                     max: _maxScores[_selectedTest!]!,
-                    divisions: (_maxScores[_selectedTest!]! / 5).toInt(), // 5점 단위로 조절
+                    divisions:
+                        (_maxScores[_selectedTest!]! / 5).toInt(), // 5점 단위로 조절
                     label: _scores[_selectedTest!]!.round().toString(),
                     onChanged: (double value) {
                       setState(() {
@@ -192,7 +201,7 @@ class _InterestSelectionPageState extends State<InterestSelectionPage> {
                   ),
                 ],
               ),
-            )
+            ),
         ],
       ),
     );
@@ -201,38 +210,44 @@ class _InterestSelectionPageState extends State<InterestSelectionPage> {
   // 관심 주제 선택 섹션
   Widget _buildInterestSection() {
     return _buildSectionCard(
-      title: 'Please tell us about the fields you\'d like to read and listen to in English!',
-      subtitle: '*You can later change selected field.\n*You can select multiple fields.',
+      title:
+          'Please tell us about the fields you\'d like to read and listen to in English!',
+      subtitle:
+          '*You can later change selected field.\n*You can select multiple fields.',
       child: Wrap(
         spacing: 12,
         runSpacing: 12,
-        children: _interestOptions.map((interest) {
-          final isSelected = _selectedInterests.contains(interest);
-          return ChoiceChip(
-            label: Text(interest),
-            labelStyle: TextStyle(
-              color: isSelected ? Colors.white : AppColors.textPrimary,
-              fontWeight: FontWeight.w500,
-            ),
-            selected: isSelected,
-            onSelected: (selected) {
-              setState(() {
-                if (selected) {
-                  _selectedInterests.add(interest);
-                } else {
-                  _selectedInterests.remove(interest);
-                }
-              });
-            },
-            backgroundColor: AppColors.grey100,
-            selectedColor: AppColors.YBMdarkPurple,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: const BorderSide(color: Colors.transparent),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          );
-        }).toList(),
+        children:
+            _interestOptions.map((interest) {
+              final isSelected = _selectedInterests.contains(interest);
+              return ChoiceChip(
+                label: Text(interest),
+                labelStyle: TextStyle(
+                  color: isSelected ? Colors.white : AppColors.textPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
+                selected: isSelected,
+                onSelected: (selected) {
+                  setState(() {
+                    if (selected) {
+                      _selectedInterests.add(interest);
+                    } else {
+                      _selectedInterests.remove(interest);
+                    }
+                  });
+                },
+                backgroundColor: AppColors.grey100,
+                selectedColor: AppColors.YBMdarkPurple,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: const BorderSide(color: Colors.transparent),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+              );
+            }).toList(),
       ),
     );
   }
@@ -240,40 +255,49 @@ class _InterestSelectionPageState extends State<InterestSelectionPage> {
   // 3. 채널 추천 탭 아이콘 변경 (구글 기본 프로필 느낌)
   Widget _buildCreatorSection() {
     return _buildSectionCard(
-        title: 'Choose channels you\'d like to follow!',
-        subtitle: '*This helps us recommend better content for you.',
-        child: Column(
-          children: _creatorOptions.map((creator) {
-            final isSelected = _selectedCreators.contains(creator['name']!);
-            return CheckboxListTile(
-              secondary: CircleAvatar(
-                backgroundColor: _getColorFor(creator['name']!),
-                child: Text(
-                  creator['name']![0], // 첫 글자
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      title: 'Choose channels you\'d like to follow!',
+      subtitle: '*This helps us recommend better content for you.',
+      child: Column(
+        children:
+            _creatorOptions.map((creator) {
+              final isSelected = _selectedCreators.contains(creator['name']!);
+              return CheckboxListTile(
+                secondary: CircleAvatar(
+                  backgroundColor: _getColorFor(creator['name']!),
+                  child: Text(
+                    creator['name']![0], // 첫 글자
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-              ),
-              title: Text(creator['name']!, style: AppTextStyles.labelLarge),
-              value: isSelected,
-              onChanged: (selected) {
-                setState(() {
-                  if (selected!) {
-                    _selectedCreators.add(creator['name']!);
-                  } else {
-                    _selectedCreators.remove(creator['name']!);
-                  }
-                });
-              },
-              activeColor: AppColors.YBMdarkPurple,
-              controlAffinity: ListTileControlAffinity.trailing,
-              contentPadding: EdgeInsets.zero,
-            );
-          }).toList(),
-        ));
+                title: Text(creator['name']!, style: AppTextStyles.labelLarge),
+                value: isSelected,
+                onChanged: (selected) {
+                  setState(() {
+                    if (selected!) {
+                      _selectedCreators.add(creator['name']!);
+                    } else {
+                      _selectedCreators.remove(creator['name']!);
+                    }
+                  });
+                },
+                activeColor: AppColors.YBMdarkPurple,
+                controlAffinity: ListTileControlAffinity.trailing,
+                contentPadding: EdgeInsets.zero,
+              );
+            }).toList(),
+      ),
+    );
   }
-  
+
   // 섹션 카드 공통 위젯
-  Widget _buildSectionCard({required String title, required String subtitle, required Widget child}) {
+  Widget _buildSectionCard({
+    required String title,
+    required String subtitle,
+    required Widget child,
+  }) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -292,9 +316,19 @@ class _InterestSelectionPageState extends State<InterestSelectionPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w500)),
+          Text(
+            title,
+            style: AppTextStyles.bodyLarge.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
+          ),
           const SizedBox(height: 8),
-          Text(subtitle, style: AppTextStyles.bodySmall.copyWith(color: AppColors.textTertiary)),
+          Text(
+            subtitle,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textTertiary,
+            ),
+          ),
           const SizedBox(height: 20),
           child,
         ],
@@ -317,11 +351,18 @@ class _InterestSelectionPageState extends State<InterestSelectionPage> {
         decoration: BoxDecoration(
           color: isSelected ? AppColors.YBMPurple : AppColors.YBMQuizPurple,
           borderRadius: BorderRadius.circular(24),
-          border: isSelected ? Border.all(color: AppColors.YBMdarkPurple, width: 2) : null,
+          border:
+              isSelected
+                  ? Border.all(color: AppColors.YBMdarkPurple, width: 2)
+                  : null,
         ),
         child: Row(
           children: [
-            const Icon(Icons.school, size: 20, color: AppColors.textSecondary), // 임시 아이콘
+            const Icon(
+              Icons.school,
+              size: 20,
+              color: AppColors.textSecondary,
+            ), // 임시 아이콘
             const SizedBox(width: 12),
             Text(
               testName,
@@ -340,8 +381,12 @@ class _InterestSelectionPageState extends State<InterestSelectionPage> {
   Color _getColorFor(String name) {
     // 간단한 해시 코드를 사용하여 색상 목록에서 색상 선택
     final colors = [
-      AppColors.YBMBlue, AppColors.YBMPink, AppColors.YBMdarkPurple,
-      Colors.orange, Colors.green, Colors.teal
+      AppColors.YBMBlue,
+      AppColors.YBMPink,
+      AppColors.YBMdarkPurple,
+      Colors.orange,
+      Colors.green,
+      Colors.teal,
     ];
     final hash = name.hashCode;
     return colors[hash % colors.length];
@@ -354,17 +399,22 @@ class _InterestSelectionPageState extends State<InterestSelectionPage> {
       height: 52,
       child: ElevatedButton(
         onPressed: () {
-          // 임시로 스터디 그룹 페이지로 이동
+          // ContentFeedPage로 이동하도록 수정
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const StudyGroupPage()),
+            MaterialPageRoute(builder: (context) => const ContentFeedPage()),
           );
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.YBMdarkPurple,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
         ),
-        child: const Text('Done', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+        child: const Text(
+          'Done',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
       ),
     );
   }

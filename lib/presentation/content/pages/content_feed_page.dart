@@ -8,7 +8,7 @@ import '../../../modules/supabase/supabase_module.dart';
 import '../../shared/widgets/search_bar_widget.dart';
 import '../widgets/content_card.dart';
 import '../widgets/small_card.dart';
-import '../../study/pages/study_list_page.dart';
+import '../../study/pages/study_group_page.dart'; // StudyGroupPage 추가
 
 class ContentFeedPage extends StatefulWidget {
   const ContentFeedPage({super.key});
@@ -279,7 +279,9 @@ class _ContentFeedPageState extends State<ContentFeedPage>
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const StudyListPage(),
+                      builder:
+                          (context) =>
+                              const StudyGroupPage(), // StudyListPage에서 StudyGroupPage로 변경
                     ),
                   );
                 },

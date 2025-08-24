@@ -46,6 +46,19 @@ class _StudyGroupPageState extends State<StudyGroupPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(
+          'Study Groups',
+          style: AppTextStyles.h3.copyWith(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -124,17 +137,35 @@ class _StudyGroupPageState extends State<StudyGroupPage> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.access_time_filled, size: 16, color: AppColors.textSecondary),
+                  const Icon(
+                    Icons.access_time_filled,
+                    size: 16,
+                    color: AppColors.textSecondary,
+                  ),
                   const SizedBox(width: 6),
-                  Text('PM 3:00', style: AppTextStyles.labelLarge.copyWith(color: AppColors.textSecondary)),
+                  Text(
+                    'PM 3:00',
+                    style: AppTextStyles.labelLarge.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(Icons.person, size: 16, color: AppColors.textSecondary),
+                  const Icon(
+                    Icons.person,
+                    size: 16,
+                    color: AppColors.textSecondary,
+                  ),
                   const SizedBox(width: 6),
-                  Text('4', style: AppTextStyles.labelLarge.copyWith(color: AppColors.textSecondary)),
+                  Text(
+                    '4',
+                    style: AppTextStyles.labelLarge.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -191,7 +222,7 @@ class _StudyGroupPageState extends State<StudyGroupPage> {
             color: Colors.black.withOpacity(0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
-          )
+          ),
         ],
       ),
       child: Column(
@@ -206,7 +237,9 @@ class _StudyGroupPageState extends State<StudyGroupPage> {
           const SizedBox(height: 4),
           Text(
             studyData['source'] as String,
-            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
           ),
           const Spacer(),
           Row(
@@ -214,7 +247,11 @@ class _StudyGroupPageState extends State<StudyGroupPage> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.person_outline, size: 16, color: AppColors.textSecondary),
+                  const Icon(
+                    Icons.person_outline,
+                    size: 16,
+                    color: AppColors.textSecondary,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     '${studyData['participants']}/${studyData['maxParticipants']}',
@@ -227,8 +264,13 @@ class _StudyGroupPageState extends State<StudyGroupPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                 ),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
